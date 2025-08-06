@@ -63,6 +63,7 @@ union qemu_plugin_cb_sig {
     qemu_plugin_vcpu_mem_cb_t        vcpu_mem;
     qemu_plugin_vcpu_syscall_cb_t    vcpu_syscall;
     qemu_plugin_vcpu_syscall_ret_cb_t vcpu_syscall_ret;
+    qemu_plugin_vcpu_tb_abort_cb_t   vcpu_tb_abort;
     void *generic;
 };
 
@@ -160,6 +161,7 @@ void qemu_plugin_vcpu_exit_hook(CPUState *cpu);
 void qemu_plugin_tb_trans_cb(CPUState *cpu, struct qemu_plugin_tb *tb);
 void qemu_plugin_vcpu_idle_cb(CPUState *cpu);
 void qemu_plugin_vcpu_resume_cb(CPUState *cpu);
+void qemu_plugin_vcpu_tb_abort_cb(CPUState *cpu, unsigned int insns_left);
 void
 qemu_plugin_vcpu_syscall(CPUState *cpu, int64_t num, uint64_t a1,
                          uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5,
@@ -238,6 +240,9 @@ static inline void qemu_plugin_vcpu_idle_cb(CPUState *cpu)
 { }
 
 static inline void qemu_plugin_vcpu_resume_cb(CPUState *cpu)
+{ }
+
+static inline void qemu_plugin_vcpu_tb_abort_cb(CPUState *cpu, unsigned int insns_left)
 { }
 
 static inline void
