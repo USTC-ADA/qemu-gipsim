@@ -36,6 +36,7 @@ riscv_system_ss.add(files(
   'th_csr.c',
   'time_helper.c',
   'riscv-qmp-cmds.c',
+  'register-reader.c'
 ))
 
 subdir('tcg')

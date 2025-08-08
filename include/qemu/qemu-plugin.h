@@ -889,6 +889,28 @@ int qemu_plugin_read_register(struct qemu_plugin_register *handle,
                               GByteArray *buf);
 
 /**
+ * @brief qemu_plugin_read_gpr - read general purpose register by idx
+ *
+ * @vcpu_index: vcpu index
+ * @idx: register index
+ * @buf: A GByteArray for the data owned by the plugin
+ * @size: size of the register
+ */
+QEMU_PLUGIN_API
+int qemu_plugin_read_gpr(unsigned int vcpu_index, unsigned int idx, char * buf, size_t size);
+
+/**
+ * @brief qemu_plugin_read_fpr - read floating point register by idx
+ *
+ * @vcpu_index: vcpu index
+ * @idx: register index
+ * @buf: A GByteArray for the data owned by the plugin
+ * @size: size of the register
+ */
+QEMU_PLUGIN_API
+int qemu_plugin_read_fpr(unsigned int vcpu_index, unsigned int idx, char * buf, size_t size);
+
+/**
  * qemu_plugin_scoreboard_new() - alloc a new scoreboard
  *
  * @element_size: size (in bytes) for one entry
