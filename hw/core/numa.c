@@ -573,7 +573,11 @@ static void validate_numa_distance(MachineState *ms)
                                  "missing, at least one distance value "
                                  "between each nodes should be provided.",
                                  src, dst);
-                    exit(EXIT_FAILURE);
+                    {
+                        extern void nya_exit(int);
+                        nya_exit(EXIT_FAILURE);
+                        exit(EXIT_FAILURE);
+                    }
                 }
             }
 
@@ -593,7 +597,11 @@ static void validate_numa_distance(MachineState *ms)
                     error_report("At least one asymmetrical pair of "
                             "distances is given, please provide distances "
                             "for both directions of all node pairs.");
-                    exit(EXIT_FAILURE);
+                    {
+                        extern void nya_exit(int);
+                        nya_exit(EXIT_FAILURE);
+                        exit(EXIT_FAILURE);
+                    }
                 }
             }
         }
@@ -679,7 +687,11 @@ void numa_complete_configuration(MachineState *ms)
         /* Report large node IDs first, to make mistakes easier to spot */
         if (!numa_info[i].present) {
             error_report("numa: Node ID missing: %d", i);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -697,14 +709,22 @@ void numa_complete_configuration(MachineState *ms)
             error_report("total memory for NUMA nodes (0x%" PRIx64 ")"
                          " should equal RAM size (0x" RAM_ADDR_FMT ")",
                          numa_total, ms->ram_size);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         if (!numa_uses_legacy_mem() && mc->default_ram_id) {
             if (ms->memdev) {
                 error_report("'-machine memory-backend' and '-numa memdev'"
                              " properties are mutually exclusive");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
             ms->ram = g_new(MemoryRegion, 1);
             memory_region_init(ms->ram, OBJECT(ms), mc->default_ram_id,

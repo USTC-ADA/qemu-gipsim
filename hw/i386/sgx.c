@@ -325,7 +325,11 @@ void pc_machine_init_sgx_epc(PCMachineState *pcms)
     if ((sgx_epc->base + sgx_epc->size) < sgx_epc->base) {
         error_report("Size of all 'sgx-epc' =0x%"PRIx64" causes EPC to wrap",
                      sgx_epc->size);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     memory_region_set_size(&sgx_epc->mr, sgx_epc->size);

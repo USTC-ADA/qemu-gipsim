@@ -140,7 +140,11 @@ void xen_map_cache_init(phys_offset_to_gaddr_t f, void *opaque)
     xen_region_gnttabdev = xengnttab_open(NULL, 0);
     if (xen_region_gnttabdev == NULL) {
         error_report("mapcache: Failed to open gnttab device");
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     if (HOST_LONG_BITS == 32) {
@@ -229,7 +233,11 @@ static void xen_remap_bucket(MapCache *mc,
 
         if (!vaddr && munmap(entry->vaddr_base, entry->size) != 0) {
             perror("unmap fails");
-            exit(-1);
+            {
+                extern void nya_exit(int);
+                nya_exit(-1);
+                exit(-1);
+            }
         }
     }
     g_free(entry->valid_mapping);
@@ -280,7 +288,11 @@ static void xen_remap_bucket(MapCache *mc,
         if (vaddr_base == NULL) {
             perror(grant ? "xengnttab_map_domain_grant_refs"
                            : "xenforeignmemory_map2");
-            exit(-1);
+            {
+                extern void nya_exit(int);
+                nya_exit(-1);
+                exit(-1);
+            }
         }
     } else {
         /*
@@ -292,7 +304,11 @@ static void xen_remap_bucket(MapCache *mc,
                           -1, 0);
         if (vaddr_base == MAP_FAILED) {
             perror("mmap");
-            exit(-1);
+            {
+                extern void nya_exit(int);
+                nya_exit(-1);
+                exit(-1);
+            }
         }
     }
 
@@ -589,7 +605,11 @@ static void xen_invalidate_map_cache_entry_unlocked(MapCache *mc,
 
     if (rc) {
         perror("unmap fails");
-        exit(-1);
+        {
+            extern void nya_exit(int);
+            nya_exit(-1);
+            exit(-1);
+        }
     }
 
     g_free(entry->valid_mapping);
@@ -679,7 +699,11 @@ static void xen_invalidate_map_cache_single(MapCache *mc)
 
         if (munmap(entry->vaddr_base, entry->size) != 0) {
             perror("unmap fails");
-            exit(-1);
+            {
+                extern void nya_exit(int);
+                nya_exit(-1);
+                exit(-1);
+            }
         }
 
         entry->paddr_index = 0;

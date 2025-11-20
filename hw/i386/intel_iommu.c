@@ -81,7 +81,11 @@ static void vtd_panic_require_caching_mode(void)
 {
     error_report("We need to set caching-mode=on for intel-iommu to enable "
                  "device assignment with IOMMU protection.");
-    exit(1);
+    {
+        extern void nya_exit(int);
+        nya_exit(1);
+        exit(1);
+    }
 }
 
 static void vtd_define_quad(IntelIOMMUState *s, hwaddr addr, uint64_t val,

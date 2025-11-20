@@ -162,7 +162,11 @@ static void cryptodev_vhost_user_event(void *opaque, QEMUChrEvent event)
     switch (event) {
     case CHR_EVENT_OPENED:
         if (cryptodev_vhost_user_start(queues, s) < 0) {
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         b->ready = true;
         break;

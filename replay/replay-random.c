@@ -38,7 +38,11 @@ int replay_read_random(void *buf, size_t len)
         g_assert(buf_size == len);
     } else {
         error_report("Missing random event in the replay log");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     return ret;
 }

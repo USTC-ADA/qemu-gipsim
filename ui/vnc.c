@@ -4279,7 +4279,11 @@ void vnc_parse(const char *str)
     const char *id;
 
     if (!opts) {
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     id = qemu_opts_id(opts);

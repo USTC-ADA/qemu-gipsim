@@ -68,7 +68,11 @@ static void create_fdt(SpikeState *s, const MemMapEntry *memmap,
     fdt = ms->fdt = create_device_tree(&fdt_size);
     if (!fdt) {
         error_report("create_device_tree() failed");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     qemu_fdt_setprop_string(fdt, "/", "model", "ucbbar,spike-bare,qemu");
@@ -210,26 +214,42 @@ static void spike_board_init(MachineState *machine)
     if (SPIKE_SOCKETS_MAX < riscv_socket_count(machine)) {
         error_report("number of sockets/nodes should be less than %d",
             SPIKE_SOCKETS_MAX);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* Initialize sockets */
     for (i = 0; i < riscv_socket_count(machine); i++) {
         if (!riscv_socket_check_hartids(machine, i)) {
             error_report("discontinuous hartids in socket%d", i);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         base_hartid = riscv_socket_first_hartid(machine, i);
         if (base_hartid < 0) {
             error_report("can't find hartid base for socket%d", i);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         hart_count = riscv_socket_hart_count(machine, i);
         if (hart_count < 0) {
             error_report("can't find hart count for socket%d", i);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         soc_name = g_strdup_printf("soc%d", i);

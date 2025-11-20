@@ -1061,7 +1061,11 @@ static void create_fdt(RISCVVirtState *s, const MemMapEntry *memmap)
     ms->fdt = create_device_tree(&s->fdt_size);
     if (!ms->fdt) {
         error_report("create_device_tree() failed");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     qemu_fdt_setprop_string(ms->fdt, "/", "model", "riscv-virtio,qemu");
@@ -1438,12 +1442,20 @@ static void virt_machine_init(MachineState *machine)
     if (VIRT_SOCKETS_MAX < socket_count) {
         error_report("number of sockets/nodes should be less than %d",
             VIRT_SOCKETS_MAX);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     if (!virt_aclint_allowed() && s->have_aclint) {
         error_report("'aclint' is only available with TCG acceleration");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* Initialize sockets */
@@ -1453,19 +1465,31 @@ static void virt_machine_init(MachineState *machine)
 
         if (!riscv_socket_check_hartids(machine, i)) {
             error_report("discontinuous hartids in socket%d", i);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         base_hartid = riscv_socket_first_hartid(machine, i);
         if (base_hartid < 0) {
             error_report("can't find hartid base for socket%d", i);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         hart_count = riscv_socket_hart_count(machine, i);
         if (hart_count < 0) {
             error_report("can't find hart count for socket%d", i);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         object_initialize_child(OBJECT(machine), soc_name, &s->soc[i],
@@ -1619,7 +1643,11 @@ static void virt_machine_init(MachineState *machine)
         machine->fdt = load_device_tree(machine->dtb, &s->fdt_size);
         if (!machine->fdt) {
             error_report("load_device_tree() failed");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     } else {
         create_fdt(s, memmap);

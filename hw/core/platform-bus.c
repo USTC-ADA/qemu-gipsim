@@ -119,7 +119,11 @@ static void platform_bus_map_irq(PlatformBusDevice *pbus, SysBusDevice *sbdev,
     irqn = find_first_zero_bit(pbus->used_irqs, max_irqs);
     if (irqn >= max_irqs) {
         error_report("Platform Bus: Can not fit IRQ line");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     set_bit(irqn, pbus->used_irqs);
@@ -154,7 +158,11 @@ static void platform_bus_map_mmio(PlatformBusDevice *pbus, SysBusDevice *sbdev,
     if (!found_region) {
         error_report("Platform Bus: Can not fit MMIO region of size %"PRIx64,
                      size);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* Map the device's region into our Platform Bus MMIO space */

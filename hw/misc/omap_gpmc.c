@@ -866,7 +866,11 @@ void omap_gpmc_attach(struct omap_gpmc_s *s, int cs, MemoryRegion *iomem)
 
     if (cs < 0 || cs >= 8) {
         fprintf(stderr, "%s: bad chip-select %i\n", __func__, cs);
-        exit(-1);
+        {
+            extern void nya_exit(int);
+            nya_exit(-1);
+            exit(-1);
+        }
     }
     f = &s->cs_file[cs];
 
@@ -883,7 +887,11 @@ void omap_gpmc_attach_nand(struct omap_gpmc_s *s, int cs, DeviceState *nand)
 
     if (cs < 0 || cs >= 8) {
         fprintf(stderr, "%s: bad chip-select %i\n", __func__, cs);
-        exit(-1);
+        {
+            extern void nya_exit(int);
+            nya_exit(-1);
+            exit(-1);
+        }
     }
     f = &s->cs_file[cs];
 

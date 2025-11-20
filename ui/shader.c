@@ -158,7 +158,11 @@ QemuGLShader *qemu_gl_init_shader(void)
     gls->texture_blit_flip_prog = qemu_gl_create_compile_link_program
         (texture_blit_flip_vert_src, texture_blit_frag_src);
     if (!gls->texture_blit_prog || !gls->texture_blit_flip_prog) {
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     gls->texture_blit_vao =

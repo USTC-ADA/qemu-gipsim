@@ -42,14 +42,22 @@ static void cubieboard_init(MachineState *machine)
     /* BIOS is not supported by this board */
     if (machine->firmware) {
         error_report("BIOS not supported for this machine");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* This board has fixed size RAM (512MiB or 1GiB) */
     if (machine->ram_size != 512 * MiB &&
         machine->ram_size != 1 * GiB) {
         error_report("This machine can only be used with 512MiB or 1GiB RAM");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     a10 = AW_A10(object_new(TYPE_AW_A10));
@@ -58,24 +66,40 @@ static void cubieboard_init(MachineState *machine)
 
     if (!object_property_set_int(OBJECT(&a10->emac), "phy-addr", 1, &err)) {
         error_reportf_err(err, "Couldn't set phy address: ");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     if (!object_property_set_int(OBJECT(&a10->timer), "clk0-freq", 32768,
                                  &err)) {
         error_reportf_err(err, "Couldn't set clk0 frequency: ");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     if (!object_property_set_int(OBJECT(&a10->timer), "clk1-freq", 24000000,
                                  &err)) {
         error_reportf_err(err, "Couldn't set clk1 frequency: ");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     if (!qdev_realize(DEVICE(a10), NULL, &err)) {
         error_reportf_err(err, "Couldn't realize Allwinner A10: ");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* Connect AXP 209 */

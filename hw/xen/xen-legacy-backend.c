@@ -608,12 +608,20 @@ void xen_be_init(void)
     xenstore = qemu_xen_xs_open();
     if (!xenstore) {
         xen_pv_printf(NULL, 0, "can't connect to xenstored\n");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     if (xen_evtchn_ops == NULL || xen_gnttab_ops == NULL) {
         xen_pv_printf(NULL, 0, "Xen operations not set up\n");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     xen_sysdev = qdev_new(TYPE_XENSYSDEV);

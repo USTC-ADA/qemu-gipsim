@@ -106,7 +106,11 @@ static void copy_properties_from_host(HostProperty *props, int nb_props,
             }
             if (!props[i].optional) {
                 /* mandatory property not found: bail out */
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
             err = NULL;
         }
@@ -146,7 +150,11 @@ static void fdt_build_clock_node(void *host_fdt, void *guest_fdt,
     if (node_offset <= 0) {
         error_report("not able to locate clock handle %d in host device tree",
                      host_phandle);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     node_path = g_malloc(path_len);
     while ((ret = fdt_get_path(host_fdt, node_offset, node_path, path_len))
@@ -157,14 +165,22 @@ static void fdt_build_clock_node(void *host_fdt, void *guest_fdt,
     if (ret < 0) {
         error_report("not able to retrieve node path for clock handle %d",
                      host_phandle);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     r = qemu_fdt_getprop(host_fdt, node_path, "compatible", &prop_len,
                          &error_fatal);
     if (strcmp(r, "fixed-clock")) {
         error_report("clock handle %d is not a fixed clock", host_phandle);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     nodename = strrchr(node_path, '/');
@@ -310,27 +326,43 @@ static int add_amd_xgbe_fdt_node(SysBusDevice *sbdev, void *opaque)
     if (!dt_name) {
         error_report("%s incorrect sysfs device name %s",
                      __func__, vbasedev->name);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     node_path = qemu_fdt_node_path(host_fdt, dt_name, vdev->compat,
                                    &error_fatal);
     if (!node_path || !node_path[0]) {
         error_report("%s unable to retrieve node path for %s/%s",
                      __func__, dt_name, vdev->compat);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     if (node_path[1]) {
         error_report("%s more than one node matching %s/%s!",
                      __func__, dt_name, vdev->compat);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     g_free(dt_name);
 
     if (vbasedev->num_regions != 5) {
         error_report("%s Does the host dt node combine XGBE/PHY?", __func__);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* generate nodes for DMA_CLK and PTP_CLK */
@@ -338,7 +370,11 @@ static int add_amd_xgbe_fdt_node(SysBusDevice *sbdev, void *opaque)
                          &prop_len, &error_fatal);
     if (prop_len != 8) {
         error_report("%s clocks property should contain 2 handles", __func__);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     host_clock_phandles = r;
     guest_clock_phandles[0] = qemu_fdt_alloc_phandle(guest_fdt);
@@ -527,7 +563,11 @@ static void add_fdt_node(SysBusDevice *sbdev, void *opaque)
     }
     error_report("Device %s can not be dynamically instantiated",
                      qdev_fw_name(DEVICE(sbdev)));
-    exit(1);
+    {
+        extern void nya_exit(int);
+        nya_exit(1);
+        exit(1);
+    }
 }
 
 void platform_bus_add_all_fdt_nodes(void *fdt, const char *intc, hwaddr addr,

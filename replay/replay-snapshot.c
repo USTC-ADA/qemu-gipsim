@@ -80,13 +80,21 @@ void replay_vmstate_init(void)
                                true, NULL, false, NULL, &err)) {
                 error_report_err(err);
                 error_report("Could not create snapshot for icount record");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         } else if (replay_mode == REPLAY_MODE_PLAY) {
             if (!load_snapshot(replay_snapshot, NULL, false, NULL, &err)) {
                 error_report_err(err);
                 error_report("Could not load snapshot for icount replay");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         }
     }

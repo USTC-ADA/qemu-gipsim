@@ -59,7 +59,11 @@ void watchdog_perform_action(void)
 
     case WATCHDOG_ACTION_POWEROFF:  /* same as 'quit' command in monitor */
         qapi_event_send_watchdog(WATCHDOG_ACTION_POWEROFF);
-        exit(0);
+        {
+            extern void nya_exit(int);
+            nya_exit(0);
+            exit(0);
+        }
 
     case WATCHDOG_ACTION_PAUSE:     /* same as 'stop' command in monitor */
         /* In a timer callback, when vm_stop calls qemu_clock_enable

@@ -108,7 +108,11 @@ static int put_unused(QEMUFile *f, void *pv, size_t size,
 {
     fprintf(stderr, "uint16_from_uint8 is used only for backwards compatibility.\n");
     fprintf(stderr, "Never should be used to write a new state.\n");
-    exit(0);
+    {
+        extern void nya_exit(int);
+        nya_exit(0);
+        exit(0);
+    }
 
     return 0;
 }

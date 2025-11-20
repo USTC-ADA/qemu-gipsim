@@ -839,7 +839,11 @@ static ssize_t arm_load_elf(struct arm_boot_info *info, uint64_t *pentry,
                       1, data_swab, as);
     if (ret <= 0) {
         /* The header loaded but the image didn't */
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     return ret;
@@ -1001,14 +1005,22 @@ static void arm_setup_direct_kernel_boot(ARMCPU *cpu,
     }
     if (kernel_size < 0) {
         error_report("could not load kernel '%s'", info->kernel_filename);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     if (kernel_size > info->ram_size) {
         error_report("kernel '%s' is too large to fit in RAM "
                      "(kernel size %zd, RAM size %" PRId64 ")",
                      info->kernel_filename, kernel_size, info->ram_size);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     info->entry = entry;
@@ -1042,7 +1054,11 @@ static void arm_setup_direct_kernel_boot(ARMCPU *cpu,
 
             if (info->initrd_start >= ram_end) {
                 error_report("not enough space after kernel to load initrd");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
 
             initrd_size = load_ramdisk_as(info->initrd_filename,
@@ -1058,13 +1074,21 @@ static void arm_setup_direct_kernel_boot(ARMCPU *cpu,
             if (initrd_size < 0) {
                 error_report("could not load initrd '%s'",
                              info->initrd_filename);
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
             if (info->initrd_start + initrd_size > ram_end) {
                 error_report("could not load initrd '%s': "
                              "too big to fit into RAM after the kernel",
                              info->initrd_filename);
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         } else {
             initrd_size = 0;
@@ -1103,7 +1127,11 @@ static void arm_setup_direct_kernel_boot(ARMCPU *cpu,
                                            align);
             if (info->dtb_start >= ram_end) {
                 error_report("Not enough space for DTB after kernel/initrd");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
             fixupcontext[FIXUP_ARGPTR_LO] = info->dtb_start;
             fixupcontext[FIXUP_ARGPTR_HI] = info->dtb_start >> 32;
@@ -1116,7 +1144,11 @@ static void arm_setup_direct_kernel_boot(ARMCPU *cpu,
                 error_report("RAM size must be less than 4GB to boot"
                              " Linux kernel using ATAGS (try passing a device tree"
                              " using -dtb)");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         }
         fixupcontext[FIXUP_ENTRYPOINT_LO] = entry;
@@ -1167,7 +1199,11 @@ static void arm_setup_firmware_boot(ARMCPU *cpu, struct arm_boot_info *info)
                          "a guest firmware/BIOS image and a guest kernel at "
                          "the same time. You should change your QEMU command "
                          "line to specify one or the other, but not both.");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         try_decompressing_kernel = arm_feature(&cpu->env,
@@ -1322,7 +1358,11 @@ void arm_load_kernel(ARMCPU *cpu, MachineState *ms, struct arm_boot_info *info)
      */
     if (!info->skip_dtb_autoload && have_dtb(info)) {
         if (arm_load_dtb(info->dtb_start, info, info->dtb_limit, as, ms) < 0) {
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 }

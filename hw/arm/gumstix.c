@@ -64,7 +64,11 @@ static void connex_init(MachineState *machine)
     if (!dinfo && !qtest_enabled()) {
         error_report("A flash image must be given with the "
                      "'pflash' parameter");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* Numonyx RC28F128J3F75 */
@@ -87,7 +91,11 @@ static void verdex_init(MachineState *machine)
     if (!dinfo && !qtest_enabled()) {
         error_report("A flash image must be given with the "
                      "'pflash' parameter");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* Micron RC28F256P30TFA */

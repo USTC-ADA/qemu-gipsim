@@ -100,7 +100,11 @@ static char *riscv_find_bios(const char *bios_filename)
              */
             error_report("Unable to find the RISC-V BIOS \"%s\"",
                          bios_filename);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -171,7 +175,11 @@ target_ulong riscv_load_firmware(const char *firmware_filename,
     }
 
     error_report("could not load firmware '%s'", firmware_filename);
-    exit(1);
+    {
+        extern void nya_exit(int);
+        nya_exit(1);
+        exit(1);
+    }
 }
 
 static void riscv_load_initrd(MachineState *machine, uint64_t kernel_entry)
@@ -202,7 +210,11 @@ static void riscv_load_initrd(MachineState *machine, uint64_t kernel_entry)
         size = load_image_targphys(filename, start, mem_size - start);
         if (size == -1) {
             error_report("could not load ramdisk '%s'", filename);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -252,7 +264,11 @@ target_ulong riscv_load_kernel(MachineState *machine,
     }
 
     error_report("could not load kernel '%s'", kernel_filename);
-    exit(1);
+    {
+        extern void nya_exit(int);
+        nya_exit(1);
+        exit(1);
+    }
 
 out:
     /*
@@ -304,7 +320,11 @@ uint64_t riscv_compute_fdt_addr(hwaddr dram_base, hwaddr dram_size,
     fdtsize = fdt_totalsize(ms->fdt);
     if (fdtsize <= 0) {
         error_report("invalid device-tree");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /*
@@ -371,7 +391,11 @@ void riscv_rom_copy_firmware_info(MachineState *machine, hwaddr rom_base,
      */
     if (dinfo_len > (rom_size - reset_vec_size)) {
         error_report("not enough space to store dynamic firmware info");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     rom_add_blob_fixed_as("mrom.finfo", &dinfo, dinfo_len,

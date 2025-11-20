@@ -813,7 +813,11 @@ static void mps2tz_common_init(MachineState *machine)
         char *sz = size_to_str(mc->default_ram_size);
         error_report("Invalid RAM size, should be %s", sz);
         g_free(sz);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     /* These clocks don't need migration because they are fixed-frequency */

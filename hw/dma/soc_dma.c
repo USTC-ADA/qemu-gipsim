@@ -275,7 +275,11 @@ void soc_dma_port_add_fifo(struct soc_dma_s *soc, hwaddr virt_base,
                              "-%"PRIx64, __func__,
                              virt_base, entry->addr,
                              (entry->addr + entry->u.mem.size));
-                exit(-1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(-1);
+                    exit(-1);
+                }
             }
 
             if (entry->addr <= virt_base)
@@ -287,7 +291,11 @@ void soc_dma_port_add_fifo(struct soc_dma_s *soc, hwaddr virt_base,
                     error_report("%s: FIFO at %"PRIx64
                                  " collides FIFO at %"PRIx64,
                                  __func__, virt_base, entry->addr);
-                    exit(-1);
+                    {
+                        extern void nya_exit(int);
+                        nya_exit(-1);
+                        exit(-1);
+                    }
                 }
 
                 entry ++;
@@ -326,7 +334,11 @@ void soc_dma_port_add_mem(struct soc_dma_s *soc, uint8_t *phys_base,
                              "-%"PRIx64, __func__,
                              virt_base, virt_base + size,
                              entry->addr, entry->addr + entry->u.mem.size);
-                exit(-1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(-1);
+                    exit(-1);
+                }
             }
 
             if (entry->addr <= virt_base)
@@ -338,7 +350,11 @@ void soc_dma_port_add_mem(struct soc_dma_s *soc, uint8_t *phys_base,
                              " collides with FIFO at %"PRIx64,
                              __func__, virt_base, virt_base + size,
                              entry->addr);
-                exit(-1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(-1);
+                    exit(-1);
+                }
             }
 
             while (entry < dma->memmap + dma->memmap_size &&

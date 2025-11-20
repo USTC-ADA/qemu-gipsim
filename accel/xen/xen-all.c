@@ -38,7 +38,11 @@ static void xenstore_record_dm_state(const char *state)
     snprintf(path, sizeof (path), "device-model/%u/state", xen_domid);
     if (!qemu_xen_xs_write(xenstore, XBT_NULL, path, state, strlen(state))) {
         error_report("error recording dm state");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 }
 
@@ -70,7 +74,11 @@ static void xen_setup_post(MachineState *ms, AccelState *accel)
         rc = xen_restrict(xen_domid);
         if (rc < 0) {
             perror("xen: failed to restrict");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 }

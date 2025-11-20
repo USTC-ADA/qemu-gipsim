@@ -59,7 +59,11 @@ static void acpi_generic_initiator_set_node(Object *obj, Visitor *v,
     if (value >= MAX_NODES) {
         error_printf("%s: Invalid NUMA node specified\n",
                      TYPE_ACPI_GENERIC_INITIATOR);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     gi->node = value;
@@ -119,14 +123,22 @@ static int build_all_acpi_generic_initiators(Object *obj, void *opaque)
     if (gi->node >= ms->numa_state->num_nodes) {
         error_printf("%s: Specified node %d is invalid.\n",
                      TYPE_ACPI_GENERIC_INITIATOR, gi->node);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     o = object_resolve_path_type(gi->pci_dev, TYPE_PCI_DEVICE, NULL);
     if (!o) {
         error_printf("%s: Specified device must be a PCI device.\n",
                      TYPE_ACPI_GENERIC_INITIATOR);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     pci_dev = PCI_DEVICE(o);

@@ -616,7 +616,11 @@ void armv7m_load_kernel(ARMCPU *cpu, const char *kernel_filename,
         }
         if (image_size < 0) {
             error_report("Could not load kernel '%s'", kernel_filename);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 

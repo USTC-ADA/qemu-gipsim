@@ -418,7 +418,11 @@ static void allwinner_r40_dramc_realize(DeviceState *dev, Error **errp)
     if (!get_match_ddr(s->ram_size)) {
         error_report("%s: ram-size %u MiB is not supported",
                         __func__, s->ram_size);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* R40 support max 2G memory but we only support up to 1G now. */

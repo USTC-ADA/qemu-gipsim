@@ -43,3 +43,7 @@ main(int argc, const char *argv[])
 
     return 0;
 }
+
+void nya_exit(int);
+
+void nya_exit(int code) { exit(code); }

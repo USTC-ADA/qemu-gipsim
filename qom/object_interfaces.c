@@ -314,7 +314,11 @@ void user_creatable_process_cmdline(const char *cmdline)
 {
     if (!user_creatable_add_from_str(cmdline, &error_fatal)) {
         /* Help was printed */
-        exit(EXIT_SUCCESS);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
+        }
     }
 }
 

@@ -76,7 +76,11 @@ static int testdev_eat_packet(TestdevChardev *testdev)
 
     switch (c) {
     case 'q':
-        exit((arg << 1) | 1);
+        {
+            extern void nya_exit(int);
+            nya_exit((arg << 1) | 1);
+            exit((arg << 1) | 1);
+        }
         break;
     default:
         break;

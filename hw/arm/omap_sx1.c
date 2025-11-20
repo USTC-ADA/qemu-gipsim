@@ -119,7 +119,11 @@ static void sx1_init(MachineState *machine, const int version)
         char *sz = size_to_str(mc->default_ram_size);
         error_report("Invalid RAM size, should be %s", sz);
         g_free(sz);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     if (version == 2) {
@@ -186,7 +190,11 @@ static void sx1_init(MachineState *machine, const int version)
 
     if (!machine->kernel_filename && !fl_idx && !qtest_enabled()) {
         error_report("Kernel or Flash image must be specified");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* Load the kernel.  */

@@ -200,7 +200,11 @@ int kvm_get_vm_type(MachineState *ms)
         if (!object_dynamic_cast(OBJECT(ms->cgs), TYPE_X86_CONFIDENTIAL_GUEST)) {
             error_report("configuration type %s not supported for x86 guests",
                          object_get_typename(OBJECT(ms->cgs)));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         kvm_type = x86_confidential_guest_kvm_type(
             X86_CONFIDENTIAL_GUEST(ms->cgs));
@@ -208,7 +212,11 @@ int kvm_get_vm_type(MachineState *ms)
 
     if (!kvm_is_vm_type_supported(kvm_type)) {
         error_report("vm-type %s not supported by KVM", vm_type_name[kvm_type]);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     return kvm_type;
@@ -333,7 +341,11 @@ static struct kvm_cpuid2 *try_get_cpuid(KVMState *s, int max)
         } else {
             fprintf(stderr, "KVM_GET_SUPPORTED_CPUID failed: %s\n",
                     strerror(-r));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
     return cpuid;
@@ -590,7 +602,11 @@ uint64_t kvm_arch_get_supported_msr_feature(KVMState *s, uint32_t index)
     if (ret != 1) {
         error_report("KVM get MSR (index=0x%x) feature failed, %s",
             index, strerror(-ret));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     value = msr_data.entries[0].data;
@@ -711,7 +727,11 @@ static void hardware_memory_error(void *host_addr)
 {
     emit_hypervisor_memory_failure(MEMORY_FAILURE_ACTION_FATAL, true);
     error_report("QEMU got Hardware memory error at addr %p", host_addr);
-    exit(1);
+    {
+        extern void nya_exit(int);
+        nya_exit(1);
+        exit(1);
+    }
 }
 
 void kvm_arch_on_sigbus_vcpu(CPUState *c, int code, void *addr)
@@ -1102,7 +1122,11 @@ static struct kvm_cpuid2 *try_get_hv_cpuid(CPUState *cs, int max,
         } else {
             fprintf(stderr, "KVM_GET_SUPPORTED_HV_CPUID failed: %s\n",
                     strerror(-r));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
     return cpuid;
@@ -3195,7 +3219,11 @@ int kvm_arch_init(MachineState *ms, KVMState *s)
         if (ret) {
             error_report("Could not enable user space MSRs: %s",
                          strerror(-ret));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         r = kvm_filter_msr(s, MSR_CORE_THREAD_COUNT,
@@ -3203,7 +3231,11 @@ int kvm_arch_init(MachineState *ms, KVMState *s)
         if (!r) {
             error_report("Could not install MSR_CORE_THREAD_COUNT handler: %s",
                          strerror(-ret));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         if (s->msr_energy.enable == true) {
@@ -3213,7 +3245,11 @@ int kvm_arch_init(MachineState *ms, KVMState *s)
                 error_report("Could not install MSR_RAPL_POWER_UNIT \
                                 handler: %s",
                              strerror(-ret));
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
 
             r = kvm_filter_msr(s, MSR_PKG_POWER_LIMIT,
@@ -3222,7 +3258,11 @@ int kvm_arch_init(MachineState *ms, KVMState *s)
                 error_report("Could not install MSR_PKG_POWER_LIMIT \
                                 handler: %s",
                              strerror(-ret));
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
 
             r = kvm_filter_msr(s, MSR_PKG_POWER_INFO,
@@ -3231,7 +3271,11 @@ int kvm_arch_init(MachineState *ms, KVMState *s)
                 error_report("Could not install MSR_PKG_POWER_INFO \
                                 handler: %s",
                              strerror(-ret));
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
             r = kvm_filter_msr(s, MSR_PKG_ENERGY_STATUS,
                                kvm_rdmsr_pkg_energy_status, NULL);
@@ -3239,12 +3283,20 @@ int kvm_arch_init(MachineState *ms, KVMState *s)
                 error_report("Could not install MSR_PKG_ENERGY_STATUS \
                                 handler: %s",
                              strerror(-ret));
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
             r = kvm_msr_energy_thread_init(s, ms);
             if (r) {
                 error_report("kvm : error RAPL feature requirement not meet");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
 
         }
@@ -5825,7 +5877,11 @@ static bool __kvm_enable_sgx_provisioning(KVMState *s)
     ret = kvm_vm_enable_cap(s, KVM_CAP_SGX_ATTRIBUTE, 0, fd);
     if (ret) {
         error_report("Could not enable SGX PROVISIONKEY: %s", strerror(-ret));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     close(fd);
     return true;
@@ -6022,7 +6078,11 @@ void kvm_arch_init_irq_routing(KVMState *s)
         for (i = 0; i < IOAPIC_NUM_PINS; i++) {
             if (kvm_irqchip_add_msi_route(&c, 0, NULL) < 0) {
                 error_report("Could not enable split IRQ mode.");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         }
         kvm_irqchip_commit_route_changes(&c);
@@ -6037,7 +6097,11 @@ int kvm_arch_irqchip_create(KVMState *s)
         if (ret) {
             error_report("Could not enable split irqchip mode: %s",
                          strerror(-ret));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         } else {
             DPRINTF("Enabled KVM_CAP_SPLIT_IRQCHIP\n");
             kvm_split_irqchip = true;

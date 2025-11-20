@@ -45,7 +45,11 @@ static PLICMode char_to_mode(char c)
     case 'M': return PLICMode_M;
     default:
         error_report("plic: invalid mode '%c'", c);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 }
 
@@ -310,7 +314,11 @@ static void parse_hart_config(SiFivePLICState *plic)
             if (modes == (modes | m)) {
                 error_report("plic: duplicate mode '%c' in config: %s",
                              c, plic->hart_config);
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
             modes |= m;
         }

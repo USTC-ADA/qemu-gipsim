@@ -526,7 +526,11 @@ void kvm_destroy_vcpu(CPUState *cpu)
 {
     if (do_kvm_destroy_vcpu(cpu) < 0) {
         error_report("kvm_destroy_vcpu failed");
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -1555,7 +1559,11 @@ static void kvm_set_phys_mem(KVMMemoryListener *kml,
             if (err) {
                 error_report("%s: failed to set memory attribute private: %s",
                              __func__, strerror(-err));
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         }
 
@@ -2371,7 +2379,11 @@ static void kvm_irqchip_create(KVMState *s)
         ret = kvm_vm_enable_cap(s, KVM_CAP_S390_IRQCHIP, 0);
         if (ret < 0) {
             fprintf(stderr, "Enable kernel irqchip failed: %s\n", strerror(-ret));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     } else {
         return;
@@ -2379,7 +2391,11 @@ static void kvm_irqchip_create(KVMState *s)
 
     if (kvm_check_extension(s, KVM_CAP_IRQFD) <= 0) {
         fprintf(stderr, "kvm: irqfd not implemented\n");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* First probe and see if there's a arch-specific hook to create the
@@ -2388,14 +2404,22 @@ static void kvm_irqchip_create(KVMState *s)
     if (ret == 0) {
         if (s->kernel_irqchip_split == ON_OFF_AUTO_ON) {
             error_report("Split IRQ chip mode not supported.");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         } else {
             ret = kvm_vm_ioctl(s, KVM_CREATE_IRQCHIP);
         }
     }
     if (ret < 0) {
         fprintf(stderr, "Create kernel irqchip failed: %s\n", strerror(-ret));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     kvm_kernel_irqchip = true;
@@ -2596,7 +2620,11 @@ static int kvm_init(MachineState *ms)
                 fprintf(stderr, "Number of %s cpus requested (%d) exceeds "
                         "the maximum cpus supported by KVM (%d)\n",
                         nc->name, nc->num, hard_vcpus_limit);
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         }
         nc++;
@@ -2874,7 +2902,11 @@ static void do_kvm_cpu_synchronize_post_init(CPUState *cpu, run_on_cpu_data arg)
     int ret = kvm_arch_put_registers(cpu, KVM_PUT_FULL_STATE);
     if (ret) {
         error_report("Failed to put registers after init: %s", strerror(-ret));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     cpu->vcpu_dirty = false;
@@ -2945,13 +2977,21 @@ static void kvm_eat_signals(CPUState *cpu)
         r = sigtimedwait(&waitset, &siginfo, &ts);
         if (r == -1 && !(errno == EAGAIN || errno == EINTR)) {
             perror("sigtimedwait");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         r = sigpending(&chkset);
         if (r == -1) {
             perror("sigpending");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     } while (sigismember(&chkset, SIG_IPI));
 }
@@ -3605,7 +3645,11 @@ void kvm_init_cpu_signals(CPUState *cpu)
     }
     if (r) {
         fprintf(stderr, "kvm_set_signal_mask: %s\n", strerror(-r));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 }
 

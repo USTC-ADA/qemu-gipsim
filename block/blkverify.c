@@ -56,7 +56,11 @@ static void G_GNUC_PRINTF(2, 3) blkverify_err(BlkverifyRequest *r,
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     va_end(ap);
-    exit(1);
+    {
+        extern void nya_exit(int);
+        nya_exit(1);
+        exit(1);
+    }
 }
 
 /* Valid blkverify filenames look like blkverify:path/to/raw_image:path/to/image */

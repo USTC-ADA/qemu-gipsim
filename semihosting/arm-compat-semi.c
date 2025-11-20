@@ -753,7 +753,11 @@ void do_common_semihosting(CPUState *cs)
             ret = (args == ADP_Stopped_ApplicationExit) ? 0 : 1;
         }
         gdb_exit(ret);
-        exit(ret);
+        {
+            extern void nya_exit(int);
+            nya_exit(ret);
+            exit(ret);
+        }
     }
 
     case TARGET_SYS_ELAPSED:

@@ -202,7 +202,11 @@ static void versatile_init(MachineState *machine, int board_id)
          * Refuse to run rather than behaving very confusingly.
          */
         error_report("versatilepb: memory size must not exceed 256MB");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     cpuobj = object_new(machine->cpu_type);

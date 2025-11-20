@@ -77,7 +77,11 @@ void accel_system_init_ops_interfaces(AccelClass *ac)
     oc = module_object_class_by_name(ops_name);
     if (!oc) {
         error_report("fatal: could not load module for type '%s'", ops_name);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     g_free(ops_name);
     ops = ACCEL_OPS_CLASS(oc);

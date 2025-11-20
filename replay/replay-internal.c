@@ -41,7 +41,11 @@ static void replay_write_error(void)
 static void replay_read_error(void)
 {
     error_report("error reading the replay data");
-    exit(1);
+    {
+        extern void nya_exit(int);
+        nya_exit(1);
+        exit(1);
+    }
 }
 
 void replay_put_byte(uint8_t byte)
@@ -184,7 +188,11 @@ void replay_fetch_data_kind(void)
             if (replay_state.data_kind >= EVENT_COUNT) {
                 error_report("Replay: unknown event kind %d",
                              replay_state.data_kind);
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         }
     }

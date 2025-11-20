@@ -1382,7 +1382,11 @@ static void bdrv_ssh_init(void)
     r = ssh_init();
     if (r != 0) {
         fprintf(stderr, "libssh initialization failed, %d\n", r);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
 #if TRACE_LIBSSH != 0

@@ -42,11 +42,19 @@ static void xen_init_pv(MachineState *machine)
         break;
     case XEN_EMULATE:
         error_report("xen emulation not implemented (yet)");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
         break;
     default:
         error_report("unhandled xen_mode %d", xen_mode);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
         break;
     }
 

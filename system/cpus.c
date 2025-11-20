@@ -479,7 +479,11 @@ void cpus_kick_thread(CPUState *cpu)
     int err = pthread_kill(cpu->thread->thread, SIG_IPI);
     if (err && err != ESRCH) {
         fprintf(stderr, "qemu:%s: %s", __func__, strerror(err));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 #else
     qemu_sem_post(&cpu->sem);

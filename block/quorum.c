@@ -455,7 +455,11 @@ static bool quorum_compare(QuorumAIOCB *acb, QEMUIOVector *a, QEMUIOVector *b)
             fprintf(stderr, "quorum: offset=%" PRIu64 " bytes=%" PRIu64
                     " contents mismatch at offset %" PRIu64 "\n",
                     acb->offset, acb->bytes, acb->offset + offset);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         return true;
     }

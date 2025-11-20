@@ -1291,12 +1291,20 @@ static void numa_validate_initiator(NumaState *numa_state)
             error_report("NUMA node %" PRIu16 " is missing, use "
                          "'-numa node' option to declare it first",
                          numa_info[i].initiator);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         if (!numa_info[numa_info[i].initiator].has_cpu) {
             error_report("The initiator of NUMA node %d is invalid", i);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 }
@@ -1403,7 +1411,11 @@ MemoryRegion *machine_consume_memdev(MachineState *machine,
     if (host_memory_backend_is_mapped(backend)) {
         error_report("memory backend %s can't be used multiple times.",
                      object_get_canonical_path_component(OBJECT(backend)));
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
     host_memory_backend_set_mapped(backend, true);
     vmstate_register_ram_global(ret);
@@ -1640,7 +1652,11 @@ void qdev_machine_creation_done(void)
     notifier_list_notify(&machine_init_done_notifiers, NULL);
 
     if (rom_check_and_register_reset() != 0) {
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     replay_start();

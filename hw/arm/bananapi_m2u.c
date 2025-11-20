@@ -46,7 +46,11 @@ static void mmc_attach_drive(AwR40State *s, AwSdHostState *mmc, int unit,
     bus = qdev_get_child_bus(DEVICE(mmc), "sd-bus");
     if (bus == NULL) {
         error_report("No SD bus found in SOC object");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     carddev = qdev_new(TYPE_SD_CARD);
@@ -68,7 +72,11 @@ static void bpim2u_init(MachineState *machine)
     /* BIOS is not supported by this board */
     if (machine->firmware) {
         error_report("BIOS not supported for this machine");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     r40 = AW_R40(object_new(TYPE_AW_R40));

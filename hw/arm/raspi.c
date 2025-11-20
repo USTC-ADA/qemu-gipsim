@@ -233,7 +233,11 @@ static void setup_boot(MachineState *machine, ARMCPU *cpu,
                                 ram_size - firmware_addr);
         if (r < 0) {
             error_report("Failed to load firmware from %s", machine->firmware);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         s->binfo.entry = firmware_addr;
@@ -260,7 +264,11 @@ void raspi_base_machine_init(MachineState *machine,
         char *size_str = size_to_str(ram_size);
         error_report("Invalid RAM size, should be %s", size_str);
         g_free(size_str);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* FIXME: Remove when we have custom CPU address space support */
@@ -281,7 +289,11 @@ void raspi_base_machine_init(MachineState *machine,
     bus = qdev_get_child_bus(DEVICE(soc), "sd-bus");
     if (bus == NULL) {
         error_report("No SD bus found in SOC object");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     carddev = qdev_new(TYPE_SD_CARD);
     qdev_prop_set_drive_err(carddev, "drive", blk, &error_fatal);

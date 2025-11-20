@@ -80,7 +80,11 @@ static void kzm_init(MachineState *machine)
         char *sz = size_to_str(FSL_IMX31_SDRAM0_SIZE + FSL_IMX31_SDRAM1_SIZE);
         error_report("RAM size more than %s is not supported", sz);
         g_free(sz);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     memory_region_add_subregion(get_system_memory(), FSL_IMX31_SDRAM0_ADDR,

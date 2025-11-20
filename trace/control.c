@@ -192,7 +192,11 @@ void trace_enable_events(const char *line_buf)
     if (is_help_option(line_buf)) {
         trace_list_events(stdout);
         if (monitor_cur() == NULL) {
-            exit(0);
+            {
+                extern void nya_exit(int);
+                nya_exit(0);
+                exit(0);
+            }
         }
     } else {
         do_trace_enable_events(line_buf);
@@ -215,7 +219,11 @@ static void trace_init_events(const char *fname)
     fp = fopen(fname, "r");
     if (!fp) {
         error_report("%s", strerror(errno));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     while (fgets(line_buf, sizeof(line_buf), fp)) {
         loc_set_file(fname, ++line_idx);
@@ -231,7 +239,11 @@ static void trace_init_events(const char *fname)
     if (fclose(fp) != 0) {
         loc_set_file(fname, 0);
         error_report("%s", strerror(errno));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     loc_pop(&loc);
 }
@@ -290,7 +302,11 @@ void trace_opt_parse(const char *optstr)
     QemuOpts *opts = qemu_opts_parse_noisily(qemu_find_opts("trace"),
                                              optstr, true);
     if (!opts) {
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     if (qemu_opt_get(opts, "enable")) {
         trace_enable_events(qemu_opt_get(opts, "enable"));

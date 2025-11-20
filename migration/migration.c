@@ -849,7 +849,11 @@ fail:
             s->error = NULL;
         }
 
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 }
 

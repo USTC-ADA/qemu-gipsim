@@ -240,7 +240,11 @@ static void palmte_init(MachineState *machine)
         char *sz = size_to_str(mc->default_ram_size);
         error_report("Invalid RAM size, should be %s", sz);
         g_free(sz);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     memory_region_add_subregion(address_space_mem, OMAP_EMIFF_BASE,
@@ -294,7 +298,11 @@ static void palmte_init(MachineState *machine)
 
     if (!rom_loaded && !machine->kernel_filename && !qtest_enabled()) {
         fprintf(stderr, "Kernel or ROM image must be specified\n");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* Load the kernel.  */

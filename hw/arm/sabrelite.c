@@ -46,7 +46,11 @@ static void sabrelite_init(MachineState *machine)
     if (machine->ram_size > FSL_IMX6_MMDC_SIZE) {
         error_report("RAM size " RAM_ADDR_FMT " above max supported (%08x)",
                      machine->ram_size, FSL_IMX6_MMDC_SIZE);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     s = FSL_IMX6(object_new(TYPE_FSL_IMX6));

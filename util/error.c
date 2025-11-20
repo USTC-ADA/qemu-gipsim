@@ -42,7 +42,11 @@ static void error_handle(Error **errp, Error *err)
     }
     if (errp == &error_fatal) {
         error_report_err(err);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     if (errp == &error_warn) {
         warn_report_err(err);

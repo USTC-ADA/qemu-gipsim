@@ -2127,7 +2127,11 @@ void audio_parse_option(const char *opt)
 
     if (is_help_option(opt)) {
         audio_help();
-        exit(EXIT_SUCCESS);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
+        }
     }
     Visitor *v = qobject_input_visitor_new_str(opt, "driver", &error_fatal);
     visit_type_Audiodev(v, NULL, &dev, &error_fatal);

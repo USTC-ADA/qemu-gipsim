@@ -1054,7 +1054,11 @@ static uint16_t pci_req_id_cache_extract(PCIReqIDCache *cache)
     default:
         error_report("Invalid PCI requester ID cache type: %d",
                      cache->type);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
         break;
     }
 
@@ -1882,12 +1886,20 @@ bool pci_init_nic_in_slot(PCIBus *rootbus, const char *model,
     if (!devaddr || pci_parse_devaddr(devaddr, &dom, &busnr, &slot, NULL) < 0) {
         error_report("Invalid PCI device address %s for device %s",
                      devaddr, model);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     if (dom != 0) {
         error_report("No support for non-zero PCI domains");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     devfn = PCI_DEVFN(slot, 0);
@@ -1896,7 +1908,11 @@ bool pci_init_nic_in_slot(PCIBus *rootbus, const char *model,
     if (!bus) {
         error_report("Invalid PCI device address %s for device %s",
                      devaddr, model);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     pci_dev = pci_new(devfn, model);

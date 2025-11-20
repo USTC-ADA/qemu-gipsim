@@ -125,7 +125,11 @@ struct omap_target_agent_s *omap_l4ta_get(struct omap_l4_s *bus,
         }
     if (!ta) {
         fprintf(stderr, "%s: bad target agent (%i)\n", __func__, cs);
-        exit(-1);
+        {
+            extern void nya_exit(int);
+            nya_exit(-1);
+            exit(-1);
+        }
     }
 
     ta->bus = bus;
@@ -150,7 +154,11 @@ hwaddr omap_l4_attach(struct omap_target_agent_s *ta,
 
     if (region < 0 || region >= ta->regions) {
         fprintf(stderr, "%s: bad io region (%i)\n", __func__, region);
-        exit(-1);
+        {
+            extern void nya_exit(int);
+            nya_exit(-1);
+            exit(-1);
+        }
     }
 
     base = ta->bus->base + ta->start[region].offset;

@@ -211,7 +211,11 @@ int64_t riscv_numa_get_default_cpu_node_id(const MachineState *ms, int idx)
         error_report("Number of NUMA nodes (%d)"
                      " cannot exceed the number of available CPUs (%u).",
                      ms->numa_state->num_nodes, ms->smp.cpus);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
     if (ms->numa_state->num_nodes) {
         nidx = idx / (ms->smp.cpus / ms->numa_state->num_nodes);

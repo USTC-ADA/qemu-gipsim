@@ -67,13 +67,21 @@ void htif_symbol_callback(const char *st_name, int st_info, uint64_t st_value,
         fromhost_addr = st_value;
         if (st_size != 8) {
             error_report("HTIF fromhost must be 8 bytes");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     } else if (strcmp("tohost", st_name) == 0) {
         tohost_addr = st_value;
         if (st_size != 8) {
             error_report("HTIF tohost must be 8 bytes");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     } else if (strcmp("begin_signature", st_name) == 0) {
         begin_sig_addr = st_value;
@@ -188,7 +196,11 @@ static void htif_handle_tohost_write(HTIFState *s, uint64_t val_written)
                     if (signature == NULL) {
                         error_report("Unable to open %s with error %s",
                                      sig_file, strerror(errno));
-                        exit(1);
+                        {
+                            extern void nya_exit(int);
+                            nya_exit(1);
+                            exit(1);
+                        }
                     }
 
                     for (int i = 0; i < sig_len; i += line_size) {
@@ -330,7 +342,11 @@ HTIFState *htif_mm_init(MemoryRegion *address_space, Chardev *chr,
     } else {
         if (!fromhost_addr || !tohost_addr) {
             error_report("Invalid HTIF fromhost or tohost address");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 

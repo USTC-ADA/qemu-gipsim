@@ -276,7 +276,11 @@ void drive_check_orphaned(void)
     }
 
     if (orphans) {
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 }
 

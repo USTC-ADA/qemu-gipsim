@@ -28,7 +28,11 @@ static void mcimx6ul_evk_init(MachineState *machine)
     if (machine->ram_size > FSL_IMX6UL_MMDC_SIZE) {
         error_report("RAM size " RAM_ADDR_FMT " above max supported (%08x)",
                      machine->ram_size, FSL_IMX6UL_MMDC_SIZE);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     boot_info = (struct arm_boot_info) {

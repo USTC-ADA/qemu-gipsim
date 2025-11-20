@@ -2389,7 +2389,11 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
 
     if (!gtkinit) {
         fprintf(stderr, "gtk initialization failed\n");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     assert(opts->type == DISPLAY_TYPE_GTK);
     s = g_malloc0(sizeof(*s));

@@ -55,7 +55,11 @@ void replay_chr_be_write(Chardev *s, const uint8_t *buf, int len)
     event->id = find_char_driver(s);
     if (event->id < 0) {
         fprintf(stderr, "Replay: cannot find char driver\n");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     event->buf = g_malloc(len);
     memcpy(event->buf, buf, len);

@@ -183,7 +183,11 @@ void qemu_semihosting_chardev_init(void)
         if (chr == NULL) {
             error_report("semihosting chardev '%s' not found",
                          semihost_chardev);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 

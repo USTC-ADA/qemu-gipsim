@@ -117,7 +117,11 @@ int qemu_chr_fe_get_msgfd(CharBackend *be)
     if (s && qemu_chr_replay(s)) {
         error_report("Replay: get msgfd is not supported "
                      "for serial devices yet");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     return res;
 }

@@ -115,7 +115,11 @@ static void create_fdt(SiFiveUState *s, const MemMapEntry *memmap,
     fdt = ms->fdt = create_device_tree(&s->fdt_size);
     if (!fdt) {
         error_report("create_device_tree() failed");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     qemu_fdt_setprop_string(fdt, "/", "model", "SiFive HiFive Unleashed A00");
@@ -554,7 +558,11 @@ static void sifive_u_machine_init(MachineState *machine)
         machine->fdt = load_device_tree(machine->dtb, &s->fdt_size);
         if (!machine->fdt) {
             error_report("load_device_tree() failed");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     } else {
         create_fdt(s, memmap, riscv_is_32bit(&s->soc.u_cpus));

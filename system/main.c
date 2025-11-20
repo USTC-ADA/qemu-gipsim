@@ -45,5 +45,10 @@ int (*qemu_main)(void) = qemu_default_main;
 int main(int argc, char **argv)
 {
     qemu_init(argc, argv);
-    return qemu_main();
+    int ret = qemu_main();
+
+    extern void qemu_plugin_before_exit_cb(void);
+    qemu_plugin_before_exit_cb();
+
+    return ret;
 }

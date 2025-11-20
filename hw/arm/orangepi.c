@@ -40,13 +40,21 @@ static void orangepi_init(MachineState *machine)
     /* BIOS is not supported by this board */
     if (machine->firmware) {
         error_report("BIOS not supported for this machine");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* This board has fixed size RAM */
     if (machine->ram_size != 1 * GiB) {
         error_report("This machine can only be used with 1GiB of RAM");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     h3 = AW_H3(object_new(TYPE_AW_H3));

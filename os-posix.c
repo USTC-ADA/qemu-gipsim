@@ -77,7 +77,11 @@ void os_set_proc_name(const char *s)
        This simple way is enough for `top'. */
     if (prctl(PR_SET_NAME, name)) {
         error_report("unable to change process name: %s", strerror(errno));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 #else
     error_report("Change of process name not supported by your OS");
@@ -145,28 +149,48 @@ static void change_process_uid(void)
         uid_t intended_uid = user_pwd ? user_pwd->pw_uid : user_uid;
         if (setgid(intended_gid) < 0) {
             error_report("Failed to setgid(%d)", intended_gid);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         if (user_pwd) {
             if (initgroups(user_pwd->pw_name, user_pwd->pw_gid) < 0) {
                 error_report("Failed to initgroups(\"%s\", %d)",
                         user_pwd->pw_name, user_pwd->pw_gid);
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         } else {
             if (setgroups(1, &user_gid) < 0) {
                 error_report("Failed to setgroups(1, [%d])",
                         user_gid);
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         }
         if (setuid(intended_uid) < 0) {
             error_report("Failed to setuid(%d)", intended_uid);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         if (setuid(0) != -1) {
             error_report("Dropping privileges failed");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 }
@@ -184,11 +208,19 @@ static void change_root(void)
     if (chroot_dir) {
         if (chroot(chroot_dir) < 0) {
             error_report("chroot failed");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         if (chdir("/")) {
             error_report("not able to chdir to /: %s", strerror(errno));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -216,7 +248,11 @@ void os_daemonize(void)
         int fds[2];
 
         if (!g_unix_open_pipe(fds, FD_CLOEXEC, NULL)) {
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         pid = fork();
@@ -232,10 +268,18 @@ void os_daemonize(void)
 
             /* only exit successfully if our child actually wrote
              * a one-byte zero to our pipe, upon successful init */
-            exit(len == 1 && status == 0 ? 0 : 1);
+            {
+                extern void nya_exit(int);
+                nya_exit(len == 1 && status == 0 ? 0 : 1);
+                exit(len == 1 && status == 0 ? 0 : 1);
+            }
 
         } else if (pid < 0) {
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         close(fds[0]);
@@ -245,9 +289,17 @@ void os_daemonize(void)
 
         pid = fork();
         if (pid > 0) {
-            exit(0);
+            {
+                extern void nya_exit(int);
+                nya_exit(0);
+                exit(0);
+            }
         } else if (pid < 0) {
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         umask(027);
 
@@ -289,11 +341,19 @@ void os_setup_post(void)
     if (daemonize) {
         if (chdir("/")) {
             error_report("not able to chdir to /: %s", strerror(errno));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         fd = RETRY_ON_EINTR(qemu_open_old("/dev/null", O_RDWR));
         if (fd == -1) {
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -317,7 +377,11 @@ void os_setup_post(void)
             len = write(daemon_pipe, &status, 1);
         } while (len < 0 && errno == EINTR);
         if (len != 1) {
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 }

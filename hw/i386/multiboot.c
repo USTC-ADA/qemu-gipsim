@@ -198,7 +198,11 @@ int load_multiboot(X86MachineState *x86ms,
 
         if (((struct elf64_hdr*)header)->e_machine == EM_X86_64) {
             error_report("Cannot load x86-64 image, give a 32bit one.");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         kernel_size = load_elf(kernel_filename, NULL, NULL, NULL, &elf_entry,
@@ -206,7 +210,11 @@ int load_multiboot(X86MachineState *x86ms,
                                0, 0);
         if (kernel_size < 0) {
             error_report("Error while loading elf kernel");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         mh_load_addr = elf_low;
         mb_kernel_size = elf_high - elf_low;
@@ -215,7 +223,11 @@ int load_multiboot(X86MachineState *x86ms,
         mbs.mb_buf = g_malloc(mb_kernel_size);
         if (rom_copy(mbs.mb_buf, mh_load_addr, mb_kernel_size) != mb_kernel_size) {
             error_report("Error while fetching elf kernel from rom");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         mb_debug("loading multiboot-elf kernel "
@@ -230,11 +242,19 @@ int load_multiboot(X86MachineState *x86ms,
         mh_load_addr = ldl_p(header+i+16);
         if (mh_header_addr < mh_load_addr) {
             error_report("invalid load_addr address");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         if (mh_header_addr - mh_load_addr > i) {
             error_report("invalid header_addr address");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         uint32_t mb_kernel_text_offset = i - (mh_header_addr - mh_load_addr);
@@ -244,24 +264,40 @@ int load_multiboot(X86MachineState *x86ms,
         if (mh_load_end_addr) {
             if (mh_load_end_addr < mh_load_addr) {
                 error_report("invalid load_end_addr address");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
             mb_load_size = mh_load_end_addr - mh_load_addr;
         } else {
             if (kernel_file_size < mb_kernel_text_offset) {
                 error_report("invalid kernel_file_size");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
             mb_load_size = kernel_file_size - mb_kernel_text_offset;
         }
         if (mb_load_size > UINT32_MAX - mh_load_addr) {
             error_report("kernel does not fit in address space");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         if (mh_bss_end_addr) {
             if (mh_bss_end_addr < (mh_load_addr + mb_load_size)) {
                 error_report("invalid bss_end_addr address");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
             mb_kernel_size = mh_bss_end_addr - mh_load_addr;
         } else {
@@ -279,7 +315,11 @@ int load_multiboot(X86MachineState *x86ms,
         fseek(f, mb_kernel_text_offset, SEEK_SET);
         if (fread(mbs.mb_buf, 1, mb_load_size, f) != mb_load_size) {
             error_report("fread() failed");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         memset(mbs.mb_buf + mb_load_size, 0, mb_kernel_size - mb_load_size);
         fclose(f);
@@ -339,7 +379,11 @@ int load_multiboot(X86MachineState *x86ms,
             mb_mod_length = get_image_size(one_file);
             if (mb_mod_length < 0) {
                 error_report("Failed to open file '%s'", one_file);
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
 
             mbs.mb_buf_size = TARGET_PAGE_ALIGN(mb_mod_length + mbs.mb_buf_size);
@@ -348,7 +392,11 @@ int load_multiboot(X86MachineState *x86ms,
             if (load_image_size(one_file, (unsigned char *)mbs.mb_buf + offs,
                                 mbs.mb_buf_size - offs) < 0) {
                 error_report("Error loading file '%s'", one_file);
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
             mb_add_mod(&mbs, mbs.mb_buf_phys + offs,
                        mbs.mb_buf_phys + offs + mb_mod_length, c);

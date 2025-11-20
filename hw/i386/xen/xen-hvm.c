@@ -653,7 +653,11 @@ void xen_hvm_init_pc(PCMachineState *pcms, MemoryRegion **ram_memory)
 
 err:
     error_report("xen hardware virtual machine initialisation failed");
-    exit(1);
+    {
+        extern void nya_exit(int);
+        nya_exit(1);
+        exit(1);
+    }
 }
 
 void xen_register_framebuffer(MemoryRegion *mr)

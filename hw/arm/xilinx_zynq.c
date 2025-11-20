@@ -213,7 +213,11 @@ static void zynq_init(MachineState *machine)
     /* max 2GB ram */
     if (machine->ram_size > 2 * GiB) {
         error_report("RAM size more than 2 GiB is not supported");
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     for (n = 0; n < smp_cpus; n++) {

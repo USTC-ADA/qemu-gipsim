@@ -134,7 +134,11 @@ static void vhost_scsi_set_status(VirtIODevice *vdev, uint8_t val)
         ret = vhost_scsi_start(s);
         if (ret < 0) {
             error_report("unable to start vhost-scsi: %s", strerror(-ret));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     } else {
         vhost_scsi_stop(s);

@@ -2326,7 +2326,11 @@ void omap_uwire_attach(struct omap_uwire_s *s,
 {
     if (chipselect < 0 || chipselect > 3) {
         error_report("%s: Bad chipselect %i", __func__, chipselect);
-        exit(-1);
+        {
+            extern void nya_exit(int);
+            nya_exit(-1);
+            exit(-1);
+        }
     }
 
     s->chip[chipselect] = slave;

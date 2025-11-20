@@ -670,7 +670,11 @@ void qemu_console_set_display_gl_ctx(QemuConsole *con, DisplayGLCtx *gl)
     assert(con);
     if (con->gl) {
         error_report("The console already has an OpenGL context.");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     con->gl = gl;
 }
@@ -1562,7 +1566,11 @@ void qemu_display_early_init(DisplayOptions *opts)
     if (dpys[opts->type] == NULL) {
         error_report("Display '%s' is not available.",
                      DisplayType_str(opts->type));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     if (dpys[opts->type]->early_init) {
         dpys[opts->type]->early_init(opts);

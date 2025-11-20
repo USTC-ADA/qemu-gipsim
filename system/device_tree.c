@@ -66,13 +66,21 @@ void *create_device_tree(int *sizep)
     if (ret) {
         error_report("%s: Unable to copy device tree into memory: %s",
                      __func__, fdt_strerror(ret));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     return fdt;
 fail:
     error_report("%s Couldn't create dt: %s", __func__, fdt_strerror(ret));
-    exit(1);
+    {
+        extern void nya_exit(int);
+        nya_exit(1);
+        exit(1);
+    }
 }
 
 void *load_device_tree(const char *filename_path, int *sizep)
@@ -152,14 +160,22 @@ static void read_fstree(void *fdt, const char *dirname)
     if (strstr(dirname, root_dir) != dirname) {
         error_report("%s: %s must be searched within %s",
                      __func__, dirname, root_dir);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     parent_node = &dirname[strlen(SYSFS_DT_BASEDIR)];
 
     d = opendir(dirname);
     if (!d) {
         error_report("%s cannot open %s", __func__, dirname);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     while ((de = readdir(d)) != NULL) {
@@ -174,7 +190,11 @@ static void read_fstree(void *fdt, const char *dirname)
 
         if (lstat(tmpnam, &st) < 0) {
             error_report("%s cannot lstat %s", __func__, tmpnam);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         if (S_ISREG(st.st_mode)) {
@@ -184,7 +204,11 @@ static void read_fstree(void *fdt, const char *dirname)
             if (!g_file_get_contents(tmpnam, &val, &len, NULL)) {
                 error_report("%s not able to extract info from %s",
                              __func__, tmpnam);
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
 
             if (strlen(parent_node) > 0) {
@@ -221,7 +245,11 @@ void *load_device_tree_from_sysfs(void)
     if (fdt_check_header(host_fdt)) {
         error_report("%s host device tree extracted into memory is invalid",
                      __func__);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     return host_fdt;
 }
@@ -236,7 +264,11 @@ static int findnode_nofail(void *fdt, const char *node_path)
     if (offset < 0) {
         error_report("%s Couldn't find node %s: %s", __func__, node_path,
                      fdt_strerror(offset));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     return offset;
@@ -360,7 +392,11 @@ int qemu_fdt_setprop(void *fdt, const char *node_path,
     if (r < 0) {
         error_report("%s: Couldn't set %s/%s: %s", __func__, node_path,
                      property, fdt_strerror(r));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     return r;
@@ -375,7 +411,11 @@ int qemu_fdt_setprop_cell(void *fdt, const char *node_path,
     if (r < 0) {
         error_report("%s: Couldn't set %s/%s = %#08x: %s", __func__,
                      node_path, property, val, fdt_strerror(r));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     return r;
@@ -397,7 +437,11 @@ int qemu_fdt_setprop_string(void *fdt, const char *node_path,
     if (r < 0) {
         error_report("%s: Couldn't set %s/%s = %s: %s", __func__,
                      node_path, property, string, fdt_strerror(r));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     return r;
@@ -474,7 +518,11 @@ uint32_t qemu_fdt_get_phandle(void *fdt, const char *path)
     if (r == 0) {
         error_report("%s: Couldn't get phandle for %s: %s", __func__,
                      path, fdt_strerror(r));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     return r;
@@ -519,7 +567,11 @@ int qemu_fdt_nop_node(void *fdt, const char *node_path)
     if (r < 0) {
         error_report("%s: Couldn't nop node %s: %s", __func__, node_path,
                      fdt_strerror(r));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     return r;
@@ -548,7 +600,11 @@ int qemu_fdt_add_subnode(void *fdt, const char *name)
     if (retval < 0) {
         error_report("%s: Failed to create subnode %s: %s",
                      __func__, name, fdt_strerror(retval));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     g_free(dupname);
@@ -578,13 +634,21 @@ int qemu_fdt_add_path(void *fdt, const char *path)
         if (retval < 0 && retval != -FDT_ERR_NOTFOUND) {
             error_report("%s: Unexpected error in finding subnode %.*s: %s",
                          __func__, namelen, name, fdt_strerror(retval));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         } else if (retval == -FDT_ERR_NOTFOUND) {
             retval = fdt_add_subnode_namelen(fdt, parent, name, namelen);
             if (retval < 0) {
                 error_report("%s: Failed to create subnode %.*s: %s",
                              __func__, namelen, name, fdt_strerror(retval));
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         }
 
@@ -602,10 +666,18 @@ void qemu_fdt_dumpdtb(void *fdt, int size)
         /* Dump the dtb to a file and quit */
         if (g_file_set_contents(dumpdtb, fdt, size, NULL)) {
             info_report("dtb dumped to %s. Exiting.", dumpdtb);
-            exit(0);
+            {
+                extern void nya_exit(int);
+                nya_exit(0);
+                exit(0);
+            }
         }
         error_report("%s: Failed dumping dtb to %s", __func__, dumpdtb);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 }
 

@@ -198,7 +198,11 @@ static void create_fdt(SBSAMachineState *sms)
 
     if (!fdt) {
         error_report("create_device_tree() failed");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     sms->fdt = fdt;
@@ -383,7 +387,11 @@ static bool sbsa_firmware_init(SBSAMachineState *sms,
             error_report("The contents of the first flash device may be "
                          "specified with -bios or with -drive if=pflash... "
                          "but you cannot use both options at once");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         /* Fall back to -bios */
@@ -391,14 +399,22 @@ static bool sbsa_firmware_init(SBSAMachineState *sms,
         fname = qemu_find_file(QEMU_FILE_TYPE_BIOS, bios_name);
         if (!fname) {
             error_report("Could not find ROM image '%s'", bios_name);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         mr = sysbus_mmio_get_region(SYS_BUS_DEVICE(sms->flash[0]), 0);
         image_size = load_image_mr(fname, mr);
         g_free(fname);
         if (image_size < 0) {
             error_report("Could not load ROM image '%s'", bios_name);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -750,14 +766,22 @@ static void sbsa_ref_init(MachineState *machine)
         error_report("Number of SMP CPUs requested (%d) exceeds max CPUs "
                      "supported by machine 'sbsa-ref' (%d)",
                      max_cpus, sbsa_max_cpus);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     sms->smp_cpus = smp_cpus;
 
     if (machine->ram_size > sbsa_ref_memmap[SBSA_MEM].size) {
         error_report("sbsa-ref: cannot model more than %dGB RAM", RAMLIMIT_GB);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     possible_cpus = mc->possible_cpu_arch_ids(machine);

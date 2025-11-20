@@ -270,7 +270,11 @@ static void allwinner_h3_dramc_realize(DeviceState *dev, Error **errp)
         } else if (i == 12) {
             error_report("%s: ram-size %u MiB is not supported",
                           __func__, s->ram_size);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 

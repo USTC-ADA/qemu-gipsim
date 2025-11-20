@@ -1712,7 +1712,11 @@ void net_check_clients(void)
 
     if (nic_model_help) {
         show_nic_models();
-        exit(0);
+        {
+            extern void nya_exit(int);
+            nya_exit(0);
+            exit(0);
+        }
     }
     net_hub_check_clients();
 
@@ -1757,7 +1761,11 @@ static int net_init_netdev(void *dummy, QemuOpts *opts, Error **errp)
 
     if (type && is_help_option(type)) {
         show_netdevs();
-        exit(0);
+        {
+            extern void nya_exit(int);
+            nya_exit(0);
+            exit(0);
+        }
     }
     return net_client_init(opts, true, errp);
 }
@@ -1786,7 +1794,11 @@ static int net_param_nic(void *dummy, QemuOpts *opts, Error **errp)
                 printf("%s\n", (char *)nic_models->pdata[i]);
             }
             g_ptr_array_free(nic_models, true);
-            exit(0);
+            {
+                extern void nya_exit(int);
+                nya_exit(0);
+                exit(0);
+            }
         }
     }
 
@@ -1933,7 +1945,11 @@ void netdev_parse_modern(const char *optstr)
 void net_client_parse(QemuOptsList *opts_list, const char *optstr)
 {
     if (!qemu_opts_parse_noisily(opts_list, optstr, true)) {
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 }
 

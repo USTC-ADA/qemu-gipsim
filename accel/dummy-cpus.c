@@ -50,7 +50,11 @@ static void *dummy_cpu_thread_fn(void *arg)
         } while (r == -1 && (errno == EAGAIN || errno == EINTR));
         if (r == -1) {
             perror("sigwait");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 #else
         qemu_sem_wait(&cpu->sem);

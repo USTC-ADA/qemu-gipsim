@@ -431,7 +431,11 @@ static void pc_xen_hvm_init(MachineState *machine)
 
     if (!xen_enabled()) {
         error_report("xenfv machine requires the xen accelerator");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     pc_xen_hvm_init_pci(machine);

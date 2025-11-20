@@ -527,7 +527,11 @@ static void microchip_icicle_kit_machine_init(MachineState *machine)
         char *sz = size_to_str(mc->default_ram_size);
         error_report("Invalid RAM size, should be bigger than %s", sz);
         g_free(sz);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     /* Initialize SoC */
@@ -598,7 +602,11 @@ static void microchip_icicle_kit_machine_init(MachineState *machine)
         machine->fdt = load_device_tree(machine->dtb, &fdt_size);
         if (!machine->fdt) {
             error_report("load_device_tree() failed");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         firmware_name = RISCV64_BIOS_BIN;

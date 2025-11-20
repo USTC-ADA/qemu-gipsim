@@ -271,14 +271,22 @@ const char *parse_cpu_option(const char *cpu_option)
     model_pieces = g_strsplit(cpu_option, ",", 2);
     if (!model_pieces[0]) {
         error_report("-cpu option cannot be empty");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     oc = cpu_class_by_name(CPU_RESOLVING_TYPE, model_pieces[0]);
     if (oc == NULL) {
         error_report("unable to find CPU model '%s'", model_pieces[0]);
         g_strfreev(model_pieces);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     cpu_type = object_class_get_name(oc);

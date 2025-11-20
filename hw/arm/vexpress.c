@@ -281,7 +281,11 @@ static void a9_daughterboard_init(VexpressMachineState *vms,
     if (ram_size > 0x40000000) {
         /* 1GB is the maximum the address space permits */
         error_report("vexpress-a9: cannot model more than 1GB RAM");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /*
@@ -368,7 +372,11 @@ static void a15_daughterboard_init(VexpressMachineState *vms,
         uint64_t rsz = ram_size;
         if (rsz > (30ULL * 1024 * 1024 * 1024)) {
             error_report("vexpress-a15: cannot model more than 30GB RAM");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -567,19 +575,31 @@ static void vexpress_common_init(MachineState *machine)
             error_report("The contents of the first flash device may be "
                          "specified with -bios or with -drive if=pflash... "
                          "but you cannot use both options at once");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         fn = qemu_find_file(QEMU_FILE_TYPE_BIOS, machine->firmware);
         if (!fn) {
             error_report("Could not find ROM image '%s'", machine->firmware);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         image_size = load_image_targphys(fn, map[VE_NORFLASH0],
                                          VEXPRESS_FLASH_SIZE);
         g_free(fn);
         if (image_size < 0) {
             error_report("Could not load ROM image '%s'", machine->firmware);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 

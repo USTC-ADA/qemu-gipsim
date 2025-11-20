@@ -264,7 +264,11 @@ static void create_fdt(VirtMachineState *vms)
 
     if (!fdt) {
         error_report("create_device_tree() failed");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     ms->fdt = fdt;
@@ -1324,7 +1328,11 @@ static bool virt_firmware_init(VirtMachineState *vms,
             error_report("The contents of the first flash device may be "
                          "specified with -bios or with -drive if=pflash... "
                          "but you cannot use both options at once");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         /* Fall back to -bios */
@@ -1332,14 +1340,22 @@ static bool virt_firmware_init(VirtMachineState *vms,
         fname = qemu_find_file(QEMU_FILE_TYPE_BIOS, bios_name);
         if (!fname) {
             error_report("Could not find ROM image '%s'", bios_name);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         mr = sysbus_mmio_get_region(SYS_BUS_DEVICE(vms->flash[0]), 0);
         image_size = load_image_mr(fname, mr);
         g_free(fname);
         if (image_size < 0) {
             error_report("Could not load ROM image '%s'", bios_name);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -1742,7 +1758,11 @@ void virt_machine_done(Notifier *notifier, void *data)
                                        vms->irqmap[VIRT_PLATFORM_BUS]);
     }
     if (arm_load_dtb(info->dtb_start, info, info->dtb_limit, as, ms) < 0) {
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     fw_cfg_add_extra_pci_roots(vms->bus, vms->fw_cfg);
@@ -1841,7 +1861,11 @@ static void virt_set_memmap(VirtMachineState *vms, int pa_bits)
     if (ms->ram_slots > ACPI_MAX_RAM_SLOTS) {
         error_report("unsupported number of memory slots: %"PRIu64,
                      ms->ram_slots);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     /*
@@ -1868,11 +1892,19 @@ static void virt_set_memmap(VirtMachineState *vms, int pa_bits)
     if (memtop > BIT_ULL(pa_bits)) {
         error_report("Addressing limited to %d bits, but memory exceeds it by %llu bytes",
                      pa_bits, memtop - BIT_ULL(pa_bits));
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
     if (base < device_memory_base) {
         error_report("maxmem/slots too huge");
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
     if (base < vms->memmap[VIRT_MEM].base + LEGACY_RAMLIMIT_BYTES) {
         base = vms->memmap[VIRT_MEM].base + LEGACY_RAMLIMIT_BYTES;
@@ -1898,7 +1930,11 @@ static VirtGICType finalize_gic_version_do(const char *accel_name,
     case VIRT_GIC_VERSION_HOST:
         if (!kvm_enabled()) {
             error_report("gic-version=host requires KVM");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         /* For KVM, gic-version=host means gic-version=max */
@@ -1927,7 +1963,11 @@ static VirtGICType finalize_gic_version_do(const char *accel_name,
         } else if (max_cpus > GIC_NCPU) {
             error_report("%s only supports GICv2 emulation but more than 8 "
                          "vcpus are requested", accel_name);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         break;
     case VIRT_GIC_VERSION_2:
@@ -1941,25 +1981,41 @@ static VirtGICType finalize_gic_version_do(const char *accel_name,
     case VIRT_GIC_VERSION_2:
         if (!(gics_supported & VIRT_GIC_VERSION_2_MASK)) {
             error_report("%s does not support GICv2 emulation", accel_name);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         break;
     case VIRT_GIC_VERSION_3:
         if (!(gics_supported & VIRT_GIC_VERSION_3_MASK)) {
             error_report("%s does not support GICv3 emulation", accel_name);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         break;
     case VIRT_GIC_VERSION_4:
         if (!(gics_supported & VIRT_GIC_VERSION_4_MASK)) {
             error_report("%s does not support GICv4 emulation, is virtualization=on?",
                          accel_name);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         break;
     default:
         error_report("logic error in finalize_gic_version");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
         break;
     }
 
@@ -2008,7 +2064,11 @@ static void finalize_gic_version(VirtMachineState *vms)
         }
     } else {
         error_report("Unsupported accelerator, can not determine GIC support");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /*
@@ -2080,7 +2140,11 @@ static void virt_cpu_post_init(VirtMachineState *vms, MemoryRegion *sysmem)
                 error_report("VCPU supports less PA bits (%d) than "
                              "requested by the memory map (%d)",
                              pamax, requested_pa_size);
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         }
     }
@@ -2190,28 +2254,44 @@ static void machvirt_init(MachineState *machine)
             error_printf("Try 'highmem-redists=on' for more CPUs\n");
         }
 
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     if (vms->secure && (kvm_enabled() || hvf_enabled())) {
         error_report("mach-virt: %s does not support providing "
                      "Security extensions (TrustZone) to the guest CPU",
                      current_accel_name());
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     if (vms->virt && (kvm_enabled() || hvf_enabled())) {
         error_report("mach-virt: %s does not support providing "
                      "Virtualization extensions to the guest CPU",
                      current_accel_name());
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     if (vms->mte && (kvm_enabled() || hvf_enabled())) {
         error_report("mach-virt: %s does not support providing "
                      "MTE to the guest CPU",
                      current_accel_name());
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     create_fdt(vms);
@@ -2286,7 +2366,11 @@ static void machvirt_init(MachineState *machine)
                 if (!object_property_find(cpuobj, "tag-memory")) {
                     error_report("MTE requested, but not supported "
                                  "by the guest CPU");
-                    exit(1);
+                    {
+                        extern void nya_exit(int);
+                        nya_exit(1);
+                        exit(1);
+                    }
                 }
 
                 tag_sysmem = g_new(MemoryRegion, 1);

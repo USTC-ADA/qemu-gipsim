@@ -861,7 +861,11 @@ static void xen_do_ioreq_register(XenIOState *state,
 
 err:
     error_report("xen hardware virtual machine initialisation failed");
-    exit(1);
+    {
+        extern void nya_exit(int);
+        nya_exit(1);
+        exit(1);
+    }
 }
 
 void xen_register_ioreq(XenIOState *state, unsigned int max_cpus,
@@ -896,5 +900,9 @@ void xen_register_ioreq(XenIOState *state, unsigned int max_cpus,
 
 err:
     error_report("xen hardware virtual machine backend registration failed");
-    exit(1);
+    {
+        extern void nya_exit(int);
+        nya_exit(1);
+        exit(1);
+    }
 }

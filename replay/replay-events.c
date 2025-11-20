@@ -59,7 +59,11 @@ static void replay_run_event(Event *event)
     default:
         error_report("Replay: invalid async event ID (%d) in the queue",
                     event->event_kind);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
         break;
     }
 }
@@ -199,7 +203,11 @@ static void replay_save_event(Event *event)
             break;
         default:
             error_report("Unknown ID %" PRId64 " of replay event", event->id);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 }
@@ -257,7 +265,11 @@ static Event *replay_read_event(void)
         return event;
     default:
         error_report("Unknown ID %d of replay event", event_kind);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
         break;
     }
 

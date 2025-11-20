@@ -102,7 +102,11 @@ void select_soundhw(const char *name, const char *audiodev)
     if (!c->name) {
         error_report("Unknown sound card name `%s'", name);
         show_valid_soundhw();
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 }
 
@@ -119,13 +123,21 @@ void soundhw_init(void)
     if (c->isa) {
         if (!isa_bus) {
             error_report("ISA bus not available for %s", c->name);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         bus = BUS(isa_bus);
     } else {
         if (!pci_bus) {
             error_report("PCI bus not available for %s", c->name);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         bus = BUS(pci_bus);
     }

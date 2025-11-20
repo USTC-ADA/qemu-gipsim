@@ -26,7 +26,11 @@ static void machine_none_init(MachineState *mch)
         cpu = cpu_create(mch->cpu_type);
         if (!cpu) {
             error_report("Unable to initialize CPU");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -38,7 +42,11 @@ static void machine_none_init(MachineState *mch)
     if (mch->kernel_filename) {
         error_report("The -kernel parameter is not supported "
                      "(use the generic 'loader' device instead).");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 }
 

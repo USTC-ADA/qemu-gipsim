@@ -122,7 +122,11 @@ void pcie_sriov_vf_register_bar(PCIDevice *dev, int region_num,
         error_report("%s: PCI region size must be a power"
                      " of two - type=0x%x, size=0x%"FMT_PCIBUS,
                      __func__, type, size);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     r = &dev->io_regions[region_num];

@@ -183,7 +183,11 @@ bool x86_machine_is_smm_enabled(const X86MachineState *x86ms)
 
     if (x86ms->smm == ON_OFF_AUTO_ON) {
         error_report("System Management Mode not supported by this hypervisor.");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     return false;
 }

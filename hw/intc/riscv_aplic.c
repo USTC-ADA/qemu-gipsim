@@ -900,7 +900,11 @@ static void riscv_aplic_realize(DeviceState *dev, Error **errp)
                 (aplic->mmode) ? MIP_MEIP : MIP_SEIP) < 0) {
                 error_report("%s already claimed",
                              (aplic->mmode) ? "MEIP" : "SEIP");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         }
     }

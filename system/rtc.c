@@ -131,7 +131,11 @@ static void configure_rtc_base_datetime(const char *startdate)
         error_report("invalid datetime format");
         error_printf("valid formats: "
                      "'2006-06-17T16:01:21' or '2006-06-17'\n");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     rtc_host_datetime_offset = rtc_ref_start_datetime - rtc_start_datetime;
     rtc_ref_start_datetime = rtc_start_datetime;
@@ -168,7 +172,11 @@ void configure_rtc(QemuOpts *opts)
             rtc_clock = QEMU_CLOCK_VIRTUAL;
         } else {
             error_report("invalid option value '%s'", value);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
     value = qemu_opt_get(opts, "driftfix");
@@ -185,7 +193,11 @@ void configure_rtc(QemuOpts *opts)
             /* discard is default */
         } else {
             error_report("invalid option value '%s'", value);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 }

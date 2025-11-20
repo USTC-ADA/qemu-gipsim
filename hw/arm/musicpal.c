@@ -1218,7 +1218,11 @@ static void musicpal_init(MachineState *machine)
         char *sz = size_to_str(mc->default_ram_size);
         error_report("Invalid RAM size, should be %s", sz);
         g_free(sz);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     cpu = ARM_CPU(cpu_create(machine->cpu_type));
@@ -1260,7 +1264,11 @@ static void musicpal_init(MachineState *machine)
         if (flash_size != 8 * MiB && flash_size != 16 * MiB &&
             flash_size != 32 * MiB) {
             error_report("Invalid flash image size");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         /*

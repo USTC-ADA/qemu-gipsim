@@ -486,7 +486,11 @@ dbus_init(DisplayState *ds, DisplayOptions *opts)
 
     if (opts->u.dbus.addr && opts->u.dbus.p2p) {
         error_report("dbus: can't accept both addr=X and p2p=yes options");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     using_dbus_display = 1;

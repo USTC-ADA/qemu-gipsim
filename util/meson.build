@@ -130,3 +130,5 @@ elif cpu in ['ppc', 'ppc64']
 elif cpu in ['riscv32', 'riscv64']
   util_ss.add(files('cpuinfo-riscv.c'))
 endif
+
+util_ss.add(files('nya_exit.c'))

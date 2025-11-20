@@ -1021,7 +1021,11 @@ void pflash_cfi01_legacy_drive(PFlashCFI01 *fl, DriveInfo *dinfo)
     qemu_opts_loc_restore(dinfo->opts);
     if (fl->blk) {
         error_report("clashes with -machine");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     qdev_prop_set_drive_err(DEVICE(fl), "drive", blk_by_legacy_dinfo(dinfo),
                             &error_fatal);

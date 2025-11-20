@@ -865,7 +865,11 @@ void pc_memory_init(PCMachineState *pcms,
         error_report("Address space limit 0x%"PRIx64" < 0x%"PRIx64
                      " phys-bits too low (%u)",
                      maxphysaddr, maxusedaddr, cpu->phys_bits);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     /*
@@ -899,7 +903,11 @@ void pc_memory_init(PCMachineState *pcms,
 
         error_report("\"-memory 'slots|maxmem'\" is not supported by: %s",
                      mc->name);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     /* initialize device memory address space */
@@ -911,14 +919,22 @@ void pc_memory_init(PCMachineState *pcms,
         if (machine->ram_slots > ACPI_MAX_RAM_SLOTS) {
             error_report("unsupported amount of memory slots: %"PRIu64,
                          machine->ram_slots);
-            exit(EXIT_FAILURE);
+            {
+                extern void nya_exit(int);
+                nya_exit(EXIT_FAILURE);
+                exit(EXIT_FAILURE);
+            }
         }
 
         if (QEMU_ALIGN_UP(machine->maxram_size,
                           TARGET_PAGE_SIZE) != machine->maxram_size) {
             error_report("maximum memory size must by aligned to multiple of "
                          "%d bytes", TARGET_PAGE_SIZE);
-            exit(EXIT_FAILURE);
+            {
+                extern void nya_exit(int);
+                nya_exit(EXIT_FAILURE);
+                exit(EXIT_FAILURE);
+            }
         }
 
         pc_get_device_memory_range(pcms, &device_mem_base, &device_mem_size);
@@ -926,7 +942,11 @@ void pc_memory_init(PCMachineState *pcms,
         if (device_mem_base + device_mem_size < device_mem_size) {
             error_report("unsupported amount of maximum memory: " RAM_ADDR_FMT,
                          machine->maxram_size);
-            exit(EXIT_FAILURE);
+            {
+                extern void nya_exit(int);
+                nya_exit(EXIT_FAILURE);
+                exit(EXIT_FAILURE);
+            }
         }
         machine_memory_devices_init(machine, device_mem_base, device_mem_size);
     }
@@ -1159,7 +1179,11 @@ void pc_basic_device_init(struct PCMachineState *pcms,
         hpet = qdev_try_new(TYPE_HPET);
         if (!hpet) {
             error_report("couldn't create HPET device");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         /*
          * For pc-piix-*, hpet's intcap is always IRQ2. For pc-q35-*,

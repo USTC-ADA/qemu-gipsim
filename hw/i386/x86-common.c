@@ -98,7 +98,11 @@ void x86_cpus_init(X86MachineState *x86ms, int default_cpu_version)
         kvm_irqchip_in_kernel() && !kvm_enable_x2apic()) {
         error_report("current -smp configuration requires kernel "
                      "irqchip and X2APIC API support.");
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     if (kvm_enabled()) {
@@ -596,7 +600,11 @@ static bool load_elfboot(const char *kernel_filename,
 
     if (flags & 0x00010004) { /* LOAD_ELF_HEADER_HAS_ADDR */
         error_report("elfboot unsupported flags = %x", flags);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     uint64_t elf_note_type = XEN_ELFNOTE_PHYS32_ENTRY;
@@ -607,14 +615,22 @@ static bool load_elfboot(const char *kernel_filename,
 
     if (kernel_size < 0) {
         error_report("Error while loading elf kernel");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     mh_load_addr = elf_low;
     elf_kernel_size = elf_high - elf_low;
 
     if (pvh_start_addr == 0) {
         error_report("Error loading uncompressed kernel without PVH ELF Note");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     fw_cfg_add_i32(fw_cfg, FW_CFG_KERNEL_ENTRY, pvh_start_addr);
     fw_cfg_add_i32(fw_cfg, FW_CFG_KERNEL_ADDR, mh_load_addr);
@@ -653,7 +669,11 @@ void x86_load_linux(X86MachineState *x86ms,
     if (!f) {
         fprintf(stderr, "qemu: could not open kernel file '%s': %s\n",
                 kernel_filename, strerror(errno));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     kernel_size = get_file_size(f);
@@ -662,7 +682,11 @@ void x86_load_linux(X86MachineState *x86ms,
         MIN(ARRAY_SIZE(header), kernel_size)) {
         fprintf(stderr, "qemu: could not load kernel '%s': %s\n",
                 kernel_filename, strerror(errno));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /*
@@ -712,7 +736,11 @@ void x86_load_linux(X86MachineState *x86ms,
                 if (!mapped_file) {
                     fprintf(stderr, "qemu: error reading initrd %s: %s\n",
                             initrd_filename, gerr->message);
-                    exit(1);
+                    {
+                        extern void nya_exit(int);
+                        nya_exit(1);
+                        exit(1);
+                    }
                 }
                 x86ms->initrd_mapped_file = mapped_file;
 
@@ -723,7 +751,11 @@ void x86_load_linux(X86MachineState *x86ms,
                     fprintf(stderr, "qemu: initrd is too large, cannot support."
                             "(max: %"PRIu32", need %"PRId64")\n",
                             initrd_max, (uint64_t)initrd_size);
-                    exit(1);
+                    {
+                        extern void nya_exit(int);
+                        nya_exit(1);
+                        exit(1);
+                    }
                 }
 
                 initrd_addr = (initrd_max - initrd_size) & ~4095;
@@ -821,7 +853,11 @@ void x86_load_linux(X86MachineState *x86ms,
             ret = qemu_strtoui(vmode, &end, 0, &video_mode);
             if (ret != 0 || (*end && *end != ' ')) {
                 fprintf(stderr, "qemu: invalid 'vga=' kernel parameter.\n");
-                exit(1);
+                {
+                    extern void nya_exit(int);
+                    nya_exit(1);
+                    exit(1);
+                }
             }
         }
         stw_p(header + 0x1fa, video_mode);
@@ -851,14 +887,22 @@ void x86_load_linux(X86MachineState *x86ms,
 
         if (protocol < 0x200) {
             fprintf(stderr, "qemu: linux kernel too old to load a ram disk\n");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         mapped_file = g_mapped_file_new(initrd_filename, false, &gerr);
         if (!mapped_file) {
             fprintf(stderr, "qemu: error reading initrd %s: %s\n",
                     initrd_filename, gerr->message);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         x86ms->initrd_mapped_file = mapped_file;
 
@@ -868,7 +912,11 @@ void x86_load_linux(X86MachineState *x86ms,
             fprintf(stderr, "qemu: initrd is too large, cannot support."
                     "(max: %"PRIu32", need %"PRId64")\n",
                     initrd_max, (uint64_t)initrd_size);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         initrd_addr = (initrd_max - initrd_size) & ~4095;
@@ -891,7 +939,11 @@ void x86_load_linux(X86MachineState *x86ms,
     setup_size = (setup_size + 1) * 512;
     if (setup_size > kernel_size) {
         fprintf(stderr, "qemu: invalid kernel header\n");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     kernel_size -= setup_size;
 
@@ -900,11 +952,19 @@ void x86_load_linux(X86MachineState *x86ms,
     fseek(f, 0, SEEK_SET);
     if (fread(setup, 1, setup_size, f) != setup_size) {
         fprintf(stderr, "fread() failed\n");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     if (fread(kernel, 1, kernel_size, f) != kernel_size) {
         fprintf(stderr, "fread() failed\n");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     fclose(f);
 
@@ -912,14 +972,22 @@ void x86_load_linux(X86MachineState *x86ms,
     if (dtb_filename) {
         if (protocol < 0x209) {
             fprintf(stderr, "qemu: Linux kernel too old to load a dtb\n");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         dtb_size = get_image_size(dtb_filename);
         if (dtb_size <= 0) {
             fprintf(stderr, "qemu: error reading dtb %s: %s\n",
                     dtb_filename, strerror(errno));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         setup_data_offset = QEMU_ALIGN_UP(kernel_size, 16);
@@ -1045,5 +1113,9 @@ void x86_bios_rom_init(X86MachineState *x86ms, const char *default_firmware,
 
 bios_error:
     fprintf(stderr, "qemu: could not load PC BIOS '%s'\n", bios_name);
-    exit(1);
+    {
+        extern void nya_exit(int);
+        nya_exit(1);
+        exit(1);
+    }
 }

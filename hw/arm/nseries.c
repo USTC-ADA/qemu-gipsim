@@ -1307,7 +1307,11 @@ static void n8x0_init(MachineState *machine,
         char *sz = size_to_str(mc->default_ram_size);
         error_report("Invalid RAM size, should be %s", sz);
         g_free(sz);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
     binfo->ram_size = machine->ram_size;
 
@@ -1384,7 +1388,11 @@ static void n8x0_init(MachineState *machine,
                                 machine->ram_size - 0x400000) < 0) {
             error_report("Failed to load secondary bootloader %s",
                          option_rom[0].name);
-            exit(EXIT_FAILURE);
+            {
+                extern void nya_exit(int);
+                nya_exit(EXIT_FAILURE);
+                exit(EXIT_FAILURE);
+            }
         }
 
         n800_setup_nolo_tags(nolo_tags);

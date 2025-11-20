@@ -66,14 +66,22 @@ static void npcm7xx_load_bootrom(MachineState *machine, NPCM7xxState *soc)
         error_report("Could not find ROM image '%s'", bios_name);
         if (!machine->kernel_filename) {
             /* We can't boot without a bootrom or a kernel image. */
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         return;
     }
     ret = load_image_mr(filename, &soc->irom);
     if (ret < 0) {
         error_report("Failed to load ROM image '%s'", filename);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 }
 
@@ -109,7 +117,11 @@ static void sdhci_attach_drive(SDHCIState *sdhci, int unit)
         BusState *bus = qdev_get_child_bus(DEVICE(sdhci), "sd-bus");
         if (bus == NULL) {
             error_report("No SD bus found in SOC object");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         DeviceState *carddev = qdev_new(TYPE_SD_CARD);

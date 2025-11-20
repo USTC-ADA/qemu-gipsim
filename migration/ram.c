@@ -4537,7 +4537,11 @@ static void ram_mig_ram_block_resized(RAMBlockNotifier *n, void *host,
     default:
         error_report("RAM block '%s' resized during postcopy state: %d",
                      rb->idstr, ps);
-        exit(-1);
+        {
+            extern void nya_exit(int);
+            nya_exit(-1);
+            exit(-1);
+        }
     }
 }
 

@@ -103,7 +103,11 @@ static int plugin_add(void *opaque, const char *name, const char *value,
         printf("Plugin options\n");
         printf("  file=<path/to/plugin.so>\n");
         printf("  plugin specific arguments\n");
-        exit(0);
+        {
+            extern void nya_exit(int);
+            nya_exit(0);
+            exit(0);
+        }
     } else if (strcmp(name, "file") == 0) {
         if (strcmp(value, "") == 0) {
             error_setg(errp, "requires a non-empty argument");
@@ -152,7 +156,11 @@ void qemu_plugin_opt_parse(const char *optstr, QemuPluginList *head)
 
     opts = qemu_opts_parse_noisily(qemu_find_opts("plugin"), optstr, true);
     if (opts == NULL) {
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
     arg.head = head;
     arg.curr = NULL;

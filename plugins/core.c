@@ -653,6 +653,14 @@ void qemu_plugin_vcpu_mem_cb(CPUState *cpu, uint64_t vaddr,
     }
 }
 
+void qemu_plugin_register_before_exit_cb(qemu_plugin_id_t id,
+                                    qemu_plugin_udata_cb_t cb,
+                                    void *udata)
+{
+    extern void qemu_plugin_register_before_exit_cb_impl(qemu_plugin_id_t id, qemu_plugin_udata_cb_t cb, void * udata);
+    qemu_plugin_register_before_exit_cb_impl(id, cb, udata);
+}
+
 void qemu_plugin_atexit_cb(void)
 {
     plugin_cb__udata(QEMU_PLUGIN_EV_ATEXIT);
@@ -707,6 +715,8 @@ void qemu_plugin_user_exit(void)
     tb_flush(current_cpu);
     end_exclusive();
 
+    extern void qemu_plugin_before_exit_cb(void);
+    qemu_plugin_before_exit_cb();
     /* now it's safe to handle the exit case */
     qemu_plugin_atexit_cb();
 }

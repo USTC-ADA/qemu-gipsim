@@ -1617,7 +1617,11 @@ StrongARMState *sa1110_init(const char *cpu_type)
 
     if (strncmp(cpu_type, "sa1110", 6)) {
         error_report("Machine requires a SA1110 processor.");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     s->cpu = ARM_CPU(cpu_create(cpu_type));

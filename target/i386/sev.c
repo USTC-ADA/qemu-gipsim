@@ -332,7 +332,11 @@ sev_ram_block_added(RAMBlockNotifier *n, void *host, size_t size,
     if (r) {
         error_report("%s: failed to register region (%p+%#zx) error '%s'",
                      __func__, host, max_size, strerror(errno));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 }
 
@@ -1033,7 +1037,11 @@ sev_launch_get_measure(Notifier *notifier, void *unused)
         /* measure all the VM save areas before getting launch_measure */
         ret = sev_launch_update_vmsa(sev_guest);
         if (ret) {
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         kvm_mark_guest_state_protected();
     }
@@ -1112,7 +1120,11 @@ sev_launch_finish(SevCommonState *sev_common)
     if (ret) {
         error_report("%s: LAUNCH_FINISH ret=%d fw_error=%d '%s'",
                      __func__, ret, error, fw_error_to_str(error));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     sev_set_guest_state(sev_common, SEV_STATE_RUNNING);
@@ -1280,7 +1292,11 @@ snp_populate_metadata_pages(SevSnpGuestState *sev_snp,
         if (!hva) {
             error_report("%s: Failed to get HVA for GPA 0x%x sz 0x%x",
                          __func__, desc->base, desc->len);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         if (type == KVM_SEV_SNP_PAGE_TYPE_CPUID) {
@@ -1295,7 +1311,11 @@ snp_populate_metadata_pages(SevSnpGuestState *sev_snp,
         if (ret) {
             error_report("%s: Failed to add metadata page gpa 0x%x+%x type %d",
                          __func__, desc->base, desc->len, desc->type);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 }
@@ -1318,7 +1338,11 @@ sev_snp_launch_finish(SevCommonState *sev_common)
     metadata = pc_system_get_ovmf_sev_metadata_ptr();
     if (metadata == NULL) {
         error_report("%s: Failed to locate SEV metadata header", __func__);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     /* Populate all the metadata pages */
@@ -1327,7 +1351,11 @@ sev_snp_launch_finish(SevCommonState *sev_common)
     QTAILQ_FOREACH(data, &launch_update, next) {
         ret = sev_snp_launch_update(sev_snp, data);
         if (ret) {
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -1338,7 +1366,11 @@ sev_snp_launch_finish(SevCommonState *sev_common)
     if (ret) {
         error_report("SNP_LAUNCH_FINISH ret=%d fw_error=%d '%s'",
                      ret, error, fw_error_to_str(error));
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     kvm_mark_guest_state_protected();
@@ -1351,7 +1383,11 @@ sev_snp_launch_finish(SevCommonState *sev_common)
     if (local_err) {
         error_report_err(local_err);
         error_free(sev_mig_blocker);
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 }
 

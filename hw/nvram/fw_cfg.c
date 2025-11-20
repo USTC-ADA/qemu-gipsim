@@ -193,7 +193,11 @@ static void fw_cfg_bootsplash(FWCfgState *s)
         if (bst_val < 0 || bst_val > 0xffff) {
             error_report("splash-time is invalid,"
                          "it should be a value between 0 and 65535");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         /* use little endian format */
         bst_le16 = cpu_to_le16(bst_val);
@@ -243,7 +247,11 @@ static void fw_cfg_reboot(FWCfgState *s)
         if (rt_val > 0xffff && rt_val != (uint64_t)-1) {
             error_report("reboot timeout is invalid,"
                          "it should be a value between -1 and 65535");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -976,7 +984,11 @@ void fw_cfg_add_file_callback(FWCfgState *s,  const char *filename,
             strcmp(s->files->f[index].name, s->files->f[i].name) == 0) {
             error_report("duplicate fw_cfg file name: %s",
                          s->files->f[index].name);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -1246,7 +1258,11 @@ void load_image_to_fw_cfg(FWCfgState *fw_cfg, uint16_t size_key,
 
         if (!g_file_get_contents(image_name, &contents, &length, NULL)) {
             error_report("failed to load \"%s\"", image_name);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         size = length;
         data = (uint8_t *)contents;

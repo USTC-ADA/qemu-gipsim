@@ -727,7 +727,11 @@ static void savevm_state_handler_insert(SaveStateEntry *nse)
         error_report("%s: Detected duplicate SaveStateEntry: "
                      "id=%s, instance_id=0x%"PRIx32, __func__,
                      nse->idstr, nse->instance_id);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     for (i = priority - 1; i >= 0; i--) {
@@ -2064,7 +2068,11 @@ static void *postcopy_ram_listen_thread(void *opaque)
          * arrived as a desperate recovery step.
          */
         rcu_unregister_thread();
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     migrate_set_state(&mis->state, MIGRATION_STATUS_POSTCOPY_ACTIVE,

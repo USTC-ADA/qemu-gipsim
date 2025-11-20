@@ -2103,7 +2103,11 @@ PXA2xxState *pxa270_init(unsigned int sdram_size, const char *cpu_type)
 
     if (strncmp(cpu_type, "pxa27", 5)) {
         error_report("Machine requires a PXA27x processor");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     s->cpu = ARM_CPU(cpu_create(cpu_type));

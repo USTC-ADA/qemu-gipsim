@@ -166,7 +166,11 @@ static void pc_system_flash_map(PCMachineState *pcms,
         if (size < 0) {
             error_report("can't get size of block device %s: %s",
                          blk_name(blk), strerror(-size));
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         if (size == 0 || !QEMU_IS_ALIGNED(size, FLASH_SECTOR_SIZE)) {
             error_report("system firmware block device %s has invalid size "
@@ -174,7 +178,11 @@ static void pc_system_flash_map(PCMachineState *pcms,
                          blk_name(blk), size);
             info_report("its size must be a non-zero multiple of 0x%x",
                         FLASH_SECTOR_SIZE);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         if ((hwaddr)size != size
             || total_size > HWADDR_MAX - size
@@ -182,7 +190,11 @@ static void pc_system_flash_map(PCMachineState *pcms,
             error_report("combined size of system firmware exceeds "
                          "%" PRIu64 " bytes",
                          pcms->max_fw_size);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         total_size += size;
@@ -234,7 +246,11 @@ void pc_system_firmware_init(PCMachineState *pcms,
     for (i = 1; i < ARRAY_SIZE(pcms->flash); i++) {
         if (pflash_blk[i] && !pflash_blk[i - 1]) {
             error_report("pflash%d requires pflash%d", i, i - 1);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
     }
 
@@ -249,7 +265,11 @@ void pc_system_firmware_init(PCMachineState *pcms,
              * capability is present.
              */
             error_report("pflash with kvm requires KVM readonly memory support");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         pc_system_flash_map(pcms, rom_memory);
@@ -276,7 +296,11 @@ void x86_firmware_configure(hwaddr gpa, void *ptr, int size)
         ret = sev_es_save_reset_vector(ptr, size);
         if (ret) {
             error_report("failed to locate and/or save reset vector");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         sev_encrypt_flash(gpa, ptr, size, &error_fatal);

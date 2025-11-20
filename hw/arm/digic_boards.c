@@ -56,12 +56,20 @@ static void digic4_board_init(MachineState *machine, DigicBoard *board)
         char *sz = size_to_str(mc->default_ram_size);
         error_report("Invalid RAM size, should be %s", sz);
         g_free(sz);
-        exit(EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        }
     }
 
     if (!qdev_realize(DEVICE(s), NULL, &err)) {
         error_reportf_err(err, "Couldn't realize DIGIC SoC: ");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     memory_region_add_subregion(get_system_memory(), 0, machine->ram);
@@ -94,13 +102,21 @@ static void digic_load_rom(DigicState *s, hwaddr addr,
 
         if (!fn) {
             error_report("Couldn't find rom image '%s'.", filename);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
 
         rom_size = load_image_targphys(fn, addr, max_size);
         if (rom_size < 0 || rom_size > max_size) {
             error_report("Couldn't load rom image '%s'.", filename);
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         g_free(fn);
     }

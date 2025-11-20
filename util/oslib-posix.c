@@ -624,7 +624,11 @@ bool qemu_prealloc_mem(int fd, char *area, size_t sz, int max_threads,
         if (ret) {
             /* Terminate QEMU since it can't recover from error */
             perror("qemu_prealloc_mem: failed to reinstall signal handler");
-            exit(1);
+            {
+                extern void nya_exit(int);
+                nya_exit(1);
+                exit(1);
+            }
         }
         qemu_mutex_unlock(&sigbus_mutex);
     }

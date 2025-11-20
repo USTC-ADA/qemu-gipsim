@@ -852,7 +852,11 @@ void tpm_tis_reset(TPMState *s)
     }
 
     if (tpm_backend_startup_tpm(s->be_driver, s->be_buffer_size) < 0) {
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 }
 

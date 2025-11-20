@@ -194,7 +194,11 @@ static SDL_AudioDeviceID sdl_open(SDL_AudioSpec *req, SDL_AudioSpec *obt,
                strerror (errno));
         /* We have failed to restore original signal mask, all bets are off,
            so exit the process */
-        exit (EXIT_FAILURE);
+        {
+            extern void nya_exit(int);
+            nya_exit (EXIT_FAILURE);
+            exit (EXIT_FAILURE);
+        }
     }
 #endif
     return devid;

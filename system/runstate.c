@@ -868,7 +868,11 @@ void qemu_init_subsystems(void)
 
     if (qcrypto_init(&err) < 0) {
         error_reportf_err(err, "cannot initialize crypto: ");
-        exit(1);
+        {
+            extern void nya_exit(int);
+            nya_exit(1);
+            exit(1);
+        }
     }
 
     os_setup_early_signal_handling();
