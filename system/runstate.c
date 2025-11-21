@@ -721,6 +721,10 @@ void qemu_system_shutdown_request(ShutdownCause reason)
     trace_qemu_system_shutdown_request(reason);
     replay_shutdown_request(reason);
     shutdown_requested = reason;
+
+    extern void qemu_plugin_before_exit_cb(void);
+    qemu_plugin_before_exit_cb();
+
     qemu_notify_event();
 }
 
