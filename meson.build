@@ -302,6 +302,10 @@ qemu_common_flags = [
 qemu_cflags = []
 qemu_ldflags = []
 
+if meson.get_compiler('c').get_id() == 'gcc'
+  qemu_common_flags = qemu_common_flags + ['-Wno-nested-externs', '-Wno-redundant-decls']
+endif
+
 if host_os == 'darwin'
   # Disable attempts to use ObjectiveC features in os/object.h since they
   # won't work when we're compiling with gcc as a C compiler.
