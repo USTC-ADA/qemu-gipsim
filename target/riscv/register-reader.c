@@ -11,27 +11,16 @@
 
 int qemu_plugin_read_gpr(unsigned int vcpu_index, unsigned int idx, char * buf, size_t size) {
     struct CPUState * cpu = qemu_get_cpu(vcpu_index);
-    struct CPUArchState * cpu_arch_state = cpu_env(cpu);
+    CPURISCVState * cpu_arch_state = cpu_env(cpu);
 
     if (size <= 4) {
         memcpy(buf, cpu_arch_state->gpr + idx, size);
         return size;
     }
-    else if (size <= 8) {
+    else {
+        size_t ret = size <= 8 ? size: 8;
         memcpy(buf, cpu_arch_state->gpr + idx, 4);
-        memcpy(buf + 4, cpu_arch_state->gprh + idx, size - 4);
-        return size;
+        memcpy(buf + 4, cpu_arch_state->gprh + idx, ret - 4);
+        return ret;
     }
-    else { return 0; }
-}
-
-int qemu_plugin_read_fpr(unsigned int vcpu_index, unsigned int idx, char * buf, size_t size) {
-    struct CPUState * cpu = qemu_get_cpu(vcpu_index);
-    struct CPUArchState * cpu_arch_state = cpu_env(cpu);
-
-    if (size <= 8) {
-        memcpy(buf, cpu_arch_state->fpr + idx, size);
-        return size;
-    }
-    else { return 0; }
 }

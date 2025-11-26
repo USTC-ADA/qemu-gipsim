@@ -24,6 +24,7 @@ arm_system_ss.add(files(
   'cortex-regs.c',
   'machine.c',
   'ptw.c',
+  'register-reader.c',
 ))
 
 arm_user_ss = ss.source_set()

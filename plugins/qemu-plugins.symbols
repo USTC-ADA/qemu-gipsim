@@ -22,7 +22,6 @@
   qemu_plugin_path_to_binary;
   qemu_plugin_read_register;
   qemu_plugin_read_gpr;
-  qemu_plugin_read_fpr;
   qemu_plugin_register_before_exit_cb;
   qemu_plugin_register_atexit_cb;
   qemu_plugin_register_flush_cb;
