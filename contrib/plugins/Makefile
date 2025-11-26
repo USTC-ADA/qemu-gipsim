@@ -17,6 +17,7 @@ NAMES += execlog
 NAMES += hotblocks
 NAMES += hotpages
 NAMES += howvec
+NAMES += test_read_gpr
 
 # The lockstep example communicates using unix sockets,
 # and can't be easily made to work on windows.
