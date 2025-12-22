@@ -1087,3 +1087,8 @@ static bool trans_csrrci(DisasContext *ctx, arg_csrrci * a)
                              ctx->zero, ctx->zero, mask, ctx->zero);
     }
 }
+
+static bool trans_m5exit(DisasContext *ctx, arg_m5exit * a)
+{
+    return true;
+}

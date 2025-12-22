@@ -1718,6 +1718,11 @@ static bool trans_NOP(DisasContext *s, arg_NOP *a)
     return true;
 }
 
+static bool trans_M5EXIT(DisasContext *s, arg_M5EXIT *a)
+{
+    return true;
+}
+
 static bool trans_YIELD(DisasContext *s, arg_YIELD *a)
 {
     /*
