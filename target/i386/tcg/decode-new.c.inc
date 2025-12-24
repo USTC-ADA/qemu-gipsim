@@ -1072,15 +1072,11 @@ static void decode_MOV_CR_DR(DisasContext *s, CPUX86State *env, X86OpEntry *entr
     entry->gen = gen_MOV;
 }
 
-static void decode_M5EXIT(DisasContext *s, CPUX86State *env, X86OpEntry *entry, uint8_t *b)
+static void decode_M5_CONTROL(DisasContext *s, CPUX86State *env, X86OpEntry *entry, uint8_t *b)
 {
-    // Only allow 0F 04 21 00
+    // Only allow 0f 04 5a and 0f 04 5b
     *b = x86_ldub_code(env, s);
-    if (*b != 0x21) {
-        *entry = UNKNOWN_OPCODE;
-    }
-    *b = x86_ldub_code(env, s);
-    if (*b != 0x00) {
+    if ((*b != 0x5a) && (*b != 0x5b)) {
         *entry = UNKNOWN_OPCODE;
     }
 
@@ -1090,7 +1086,7 @@ static void decode_M5EXIT(DisasContext *s, CPUX86State *env, X86OpEntry *entry, 
 static const X86OpEntry opcodes_0F[256] = {
     [0x02] = X86_OP_ENTRYwr(LAR,        G,v, E,w,             chk(prot)),
     [0x03] = X86_OP_ENTRYwr(LSL,        G,v, E,w,             chk(prot)),
-    [0x04] = X86_OP_GROUP0(M5EXIT),
+    [0x04] = X86_OP_GROUP0(M5_CONTROL),
     [0x05] = X86_OP_ENTRY0(SYSCALL,                           chk(o64_intel)),
     [0x06] = X86_OP_ENTRY0(CLTS,                              chk(cpl0) svm(WRITE_CR0)),
     [0x07] = X86_OP_ENTRY0(SYSRET,                            chk3(o64_intel, prot, cpl0)),

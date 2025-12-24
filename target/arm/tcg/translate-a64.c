@@ -1718,7 +1718,12 @@ static bool trans_NOP(DisasContext *s, arg_NOP *a)
     return true;
 }
 
-static bool trans_M5EXIT(DisasContext *s, arg_M5EXIT *a)
+static bool trans_M5_WORKBEGIN(DisasContext *s, arg_M5_WORKBEGIN *a)
+{
+    return true;
+}
+
+static bool trans_M5_WORKEND(DisasContext *s, arg_M5_WORKEND *a)
 {
     return true;
 }

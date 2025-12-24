@@ -1088,7 +1088,12 @@ static bool trans_csrrci(DisasContext *ctx, arg_csrrci * a)
     }
 }
 
-static bool trans_m5exit(DisasContext *ctx, arg_m5exit * a)
+static bool trans_m5_workbegin(DisasContext *ctx, arg_m5_workbegin * a)
+{
+    return true;
+}
+
+static bool trans_m5_workend(DisasContext *ctx, arg_m5_workend * a)
 {
     return true;
 }
