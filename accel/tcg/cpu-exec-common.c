@@ -22,6 +22,7 @@
 #include "sysemu/tcg.h"
 #include "qemu/plugin.h"
 #include "internal-common.h"
+#include "qemu/plugin.h"
 
 bool tcg_allowed;
 
@@ -44,7 +45,14 @@ void cpu_loop_exit(CPUState *cpu)
 void cpu_loop_exit_restore(CPUState *cpu, uintptr_t pc)
 {
     if (pc) {
+        int orig_value = cpu->neg.icount_decr.u16.low;
+
         cpu_restore_state(cpu, pc);
+
+        int insns_left = cpu->neg.icount_decr.u16.low - orig_value;
+        if (insns_left > 0) {
+            qemu_plugin_vcpu_tb_abort_cb(cpu, insns_left);
+        }
     }
     cpu_loop_exit(cpu);
 }

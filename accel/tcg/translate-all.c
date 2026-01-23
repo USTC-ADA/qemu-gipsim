@@ -19,7 +19,6 @@
 
 #include "qemu/osdep.h"
 
-#include "qemu/plugin.h"
 #include "trace.h"
 #include "disas/disas.h"
 #include "exec/exec-all.h"
@@ -205,8 +204,6 @@ void cpu_restore_state_from_tb(CPUState *cpu, TranslationBlock *tb,
 {
     uint64_t data[TARGET_INSN_START_WORDS];
     int insns_left = cpu_unwind_data_from_tb(tb, host_pc, data);
-
-    qemu_plugin_vcpu_tb_abort_cb(cpu, insns_left);
 
     if (insns_left < 0) {
         return;
