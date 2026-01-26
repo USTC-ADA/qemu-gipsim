@@ -41,6 +41,7 @@
 #include "qemu/log.h"
 #include "qemu/timer.h"
 #include "tcg/tcg.h"
+#include "exec/cpu-common.h"
 #include "exec/exec-all.h"
 #include "exec/gdbstub.h"
 #include "exec/translator.h"
@@ -333,6 +334,14 @@ const char *qemu_plugin_insn_symbol(const struct qemu_plugin_insn *insn)
  * The memory queries allow the plugin to query information about a
  * memory access.
  */
+qemu_plugin_meminfo_t qemu_plugin_get_meminfo(void) {
+    return
+        // only concern about rw and mmuidx
+        // rw: QEMU_PLUGIN_MEM_R << 16
+        (QEMU_PLUGIN_MEM_R << 16) | 
+        // mmuidx: cpu_mmu_index(cs = current_cpu, ifetch = true)
+        cpu_mmu_index(current_cpu, true);
+}
 
 unsigned qemu_plugin_mem_size_shift(qemu_plugin_meminfo_t info)
 {

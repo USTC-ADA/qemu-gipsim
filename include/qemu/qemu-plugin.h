@@ -538,6 +538,15 @@ typedef uint32_t qemu_plugin_meminfo_t;
 struct qemu_plugin_hwaddr;
 
 /**
+ * qemu_plugin_get_meminfo() - get current cpu meminfo
+ * ! for only query hwaddr of code segment
+ *
+ * Returns: qemu_plugin_meminfo_t
+ */
+QEMU_PLUGIN_API
+qemu_plugin_meminfo_t qemu_plugin_get_meminfo(void);
+
+/**
  * qemu_plugin_mem_size_shift() - get size of access
  * @info: opaque memory transaction handle
  *
