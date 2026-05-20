@@ -492,15 +492,15 @@ void qemu_plugin_tb_trans_cb(CPUState *cpu, struct qemu_plugin_tb *tb)
  * have type information
  */
 QEMU_DISABLE_CFI
-void qemu_plugin_vcpu_tb_abort_cb(CPUState * cpu, unsigned int insns_left)
+void qemu_plugin_vcpu_exception_cb(CPUState * cpu, uint64_t eret_pc)
 {
     struct qemu_plugin_cb *cb, *next;
-    enum qemu_plugin_event ev = QEMU_PLUGIN_EV_VCPU_TB_ABORT;
+    enum qemu_plugin_event ev = QEMU_PLUGIN_EV_VCPU_EXCEPTION;
 
     QLIST_FOREACH_SAFE_RCU(cb, &plugin.cb_lists[ev], entry, next) {
-        qemu_plugin_vcpu_tb_abort_cb_t func = cb->f.vcpu_tb_abort;
+        qemu_plugin_vcpu_exception_cb_t func = cb->f.vcpu_exception;
 
-        func(cpu->cpu_index, insns_left);
+        func(cpu->cpu_index, eret_pc);
     }
 }
 

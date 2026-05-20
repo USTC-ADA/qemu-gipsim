@@ -26,6 +26,7 @@
 #include "exec/cpu_ldst.h"
 #include "tcg/helper-tcg.h"
 #include "../seg_helper.h"
+#include "qemu/plugin.h"
 
 void helper_syscall(CPUX86State *env, int next_eip_addend)
 {
@@ -114,6 +115,7 @@ void x86_cpu_do_interrupt(CPUState *cs)
 {
     X86CPU *cpu = X86_CPU(cs);
     CPUX86State *env = &cpu->env;
+    uint64_t next_eip = env->exception_next_eip;
 
     if (cs->exception_index == EXCP_VMEXIT) {
         assert(env->old_exception == -1);
@@ -126,6 +128,8 @@ void x86_cpu_do_interrupt(CPUState *cs)
         /* successfully delivered */
         env->old_exception = -1;
     }
+
+    qemu_plugin_vcpu_exception_cb(cs, next_eip);
 }
 
 bool x86_cpu_exec_halt(CPUState *cpu)

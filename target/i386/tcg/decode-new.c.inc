@@ -1078,8 +1078,10 @@ static void decode_M5_CONTROL(DisasContext *s, CPUX86State *env, X86OpEntry *ent
     *b = x86_ldub_code(env, s);
     if ((*b != 0x5a) && (*b != 0x5b)) {
         *entry = UNKNOWN_OPCODE;
+	return;
     }
 
+    x86_ldub_code(env, s);
     *entry = ((X86OpEntry) X86_OP_ENTRY0(NOP));
 }
 

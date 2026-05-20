@@ -394,23 +394,22 @@ void qemu_plugin_register_vcpu_insn_exec_cb(struct qemu_plugin_insn *insn,
                                             void *userdata);
 
 /**
- * typedef qemu_plugin_vcpu_tb_abort_cb_t - exception callback
- * @vcpu_index: the executing vCPU
- * @insns_left: the number of instructions left to execute
+ * typedef qemu_plugin_vcpu_exception_cb_t - insn abort callback
+ * @vcpu_index: the current vcpu context
  */
-typedef void (*qemu_plugin_vcpu_tb_abort_cb_t)(unsigned int vcpu_index,
-                                               unsigned int insns_left);
+typedef void (*qemu_plugin_vcpu_exception_cb_t)(unsigned int vcpu_index,
+                                               uint64_t eret_pc);
 
 /**
- * qemu_plugin_register_vcpu_tb_abort_cb() - register exception callback
+ * qemu_plugin_register_vcpu_exception_cb() - register insn abort callback
  * @id: plugin ID
  * @cb: callback function
  *
- * The @cb function is called when a translation block is aborted.
+ * The @cb function is called when an instruction is aborted by exceptions.
  */
 QEMU_PLUGIN_API
-void qemu_plugin_register_vcpu_tb_abort_cb(qemu_plugin_id_t id,
-                                           qemu_plugin_vcpu_tb_abort_cb_t cb);
+void qemu_plugin_register_vcpu_exception_cb(qemu_plugin_id_t id,
+                                             qemu_plugin_vcpu_exception_cb_t cb);
 
 /**
  * qemu_plugin_register_vcpu_insn_exec_cond_cb() - conditional insn execution cb
