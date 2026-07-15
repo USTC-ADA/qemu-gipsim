@@ -32,6 +32,7 @@
 #include "qemu/main-loop.h"
 #include "qemu/option.h"
 #include "qemu/seqlock.h"
+#include "qemu/host-utils.h"
 #include "sysemu/replay.h"
 #include "sysemu/runstate.h"
 #include "hw/core/cpu.h"
@@ -51,6 +52,9 @@ static bool icount_sleep = true;
 
 /* Do not count executed instructions */
 ICountMode use_icount = ICOUNT_DISABLED;
+static bool icount_ns_scale_initialized;
+static uint64_t icount_ns_num = 1;
+static uint64_t icount_ns_den = 1;
 
 static void icount_enable_precise(void)
 {
@@ -62,6 +66,40 @@ static void icount_enable_adaptive(void)
 {
     /* Runtime adaptive algorithm to compute shift */
     use_icount = ICOUNT_ADAPTATIVE;
+}
+
+static void icount_init_ns_scale(void)
+{
+    const char *num_text;
+    const char *den_text;
+    int64_t num;
+    int64_t den;
+
+    if (icount_ns_scale_initialized) {
+        return;
+    }
+    icount_ns_scale_initialized = true;
+
+    num_text = g_getenv("QEMU_ICOUNT_NS_NUM");
+    den_text = g_getenv("QEMU_ICOUNT_NS_DEN");
+    if (!num_text && !den_text) {
+        return;
+    }
+
+    if (!num_text || !den_text ||
+        qemu_strtoi64(num_text, NULL, 10, &num) < 0 ||
+        qemu_strtoi64(den_text, NULL, 10, &den) < 0 ||
+        num <= 0 || den <= 0) {
+        error_report("Ignoring invalid QEMU icount ns scale: %s/%s",
+                     num_text ? num_text : "(unset)",
+                     den_text ? den_text : "(unset)");
+        return;
+    }
+
+    icount_ns_num = num;
+    icount_ns_den = den;
+    error_report("QEMU icount ns scale: %" PRIu64 "/%" PRIu64,
+                 icount_ns_num, icount_ns_den);
 }
 
 /*
@@ -159,7 +197,10 @@ int64_t icount_get(void)
 
 int64_t icount_to_ns(int64_t icount)
 {
-    return icount << qatomic_read(&timers_state.icount_time_shift);
+    int64_t ns = icount << qatomic_read(&timers_state.icount_time_shift);
+
+    icount_init_ns_scale();
+    return muldiv64(ns, icount_ns_num, icount_ns_den);
 }
 
 /*
@@ -229,7 +270,13 @@ static void icount_adjust_vm(void *opaque)
 int64_t icount_round(int64_t count)
 {
     int shift = qatomic_read(&timers_state.icount_time_shift);
-    return (count + (1 << shift) - 1) >> shift;
+    uint64_t scaled_count;
+    __uint128_t numerator;
+
+    icount_init_ns_scale();
+    numerator = (__uint128_t)count * icount_ns_den + icount_ns_num - 1;
+    scaled_count = numerator / icount_ns_num;
+    return (scaled_count + (1 << shift) - 1) >> shift;
 }
 
 static void icount_warp_rt(void)

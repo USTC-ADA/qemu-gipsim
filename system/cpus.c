@@ -31,6 +31,9 @@
 #include "qapi/qapi-events-run-state.h"
 #include "qapi/qmp/qerror.h"
 #include "exec/gdbstub.h"
+#include "qemu/cutils.h"
+#include "qemu/error-report.h"
+#include "qemu/host-utils.h"
 #include "sysemu/hw_accel.h"
 #include "exec/cpu-common.h"
 #include "qemu/thread.h"
@@ -72,6 +75,50 @@ static QemuMutex bql;
  * The chosen accelerator is supposed to register this.
  */
 static const AccelOpsClass *cpus_accel;
+
+static bool virtual_clock_ns_scale_initialized;
+static uint64_t virtual_clock_ns_num = 1;
+static uint64_t virtual_clock_ns_den = 1;
+
+static void virtual_clock_init_ns_scale(void)
+{
+    const char *num_text;
+    const char *den_text;
+    int64_t num;
+    int64_t den;
+
+    if (virtual_clock_ns_scale_initialized) {
+        return;
+    }
+    virtual_clock_ns_scale_initialized = true;
+
+    num_text = g_getenv("QEMU_VIRTUAL_CLOCK_NS_NUM");
+    den_text = g_getenv("QEMU_VIRTUAL_CLOCK_NS_DEN");
+    if (!num_text && !den_text) {
+        return;
+    }
+
+    if (!num_text || !den_text ||
+        qemu_strtoi64(num_text, NULL, 10, &num) < 0 ||
+        qemu_strtoi64(den_text, NULL, 10, &den) < 0 ||
+        num <= 0 || den <= 0) {
+        error_report("Ignoring invalid QEMU virtual clock ns scale: %s/%s",
+                     num_text ? num_text : "(unset)",
+                     den_text ? den_text : "(unset)");
+        return;
+    }
+
+    virtual_clock_ns_num = num;
+    virtual_clock_ns_den = den;
+    error_report("QEMU virtual clock ns scale: %" PRIu64 "/%" PRIu64,
+                 virtual_clock_ns_num, virtual_clock_ns_den);
+}
+
+static int64_t virtual_clock_scale_ns(int64_t ns)
+{
+    virtual_clock_init_ns_scale();
+    return muldiv64(ns, virtual_clock_ns_num, virtual_clock_ns_den);
+}
 
 bool cpu_is_stopped(CPUState *cpu)
 {
@@ -226,7 +273,7 @@ int64_t cpus_get_virtual_clock(void)
     if (cpus_accel && cpus_accel->get_virtual_clock) {
         return cpus_accel->get_virtual_clock();
     }
-    return cpu_get_clock();
+    return virtual_clock_scale_ns(cpu_get_clock());
 }
 
 /*
@@ -879,4 +926,3 @@ void qmp_inject_nmi(Error **errp)
 {
     nmi_monitor_handle(monitor_get_cpu_index(monitor_cur()), errp);
 }
-

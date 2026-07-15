@@ -1382,7 +1382,18 @@ void helper_load_seg(CPUX86State *env, int seg_reg, int selector)
             ) {
             raise_exception_err_ra(env, EXCP0D_GPF, 0, GETPC());
         }
-        cpu_x86_load_seg_cache(env, seg_reg, selector, 0, 0, 0);
+#ifdef TARGET_X86_64
+        if ((env->hflags & HF_LMA_MASK) &&
+            (seg_reg == R_FS || seg_reg == R_GS)) {
+            cpu_x86_load_seg_cache(env, seg_reg, selector,
+                                   env->segs[seg_reg].base,
+                                   env->segs[seg_reg].limit,
+                                   env->segs[seg_reg].flags & ~DESC_P_MASK);
+        } else
+#endif
+        {
+            cpu_x86_load_seg_cache(env, seg_reg, selector, 0, 0, 0);
+        }
     } else {
 
         if (selector & 0x4) {

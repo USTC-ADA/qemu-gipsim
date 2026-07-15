@@ -110,10 +110,29 @@ static void put_le16(uint16_t *p, unsigned int v)
     *p = cpu_to_le16(v);
 }
 
+static bool ide_is_gem5_compatible(const IDEState *s)
+{
+    return s->drive_kind == IDE_HD &&
+           strcmp(s->drive_model_str, "M5 IDE Disk") == 0;
+}
+
 static void ide_identify_size(IDEState *s)
 {
     uint16_t *p = (uint16_t *)s->identify_data;
     int64_t nb_sectors_lba28 = s->nb_sectors;
+
+    if (ide_is_gem5_compatible(s)) {
+        uint64_t nb_sectors = MIN(s->nb_sectors, (uint64_t)UINT32_MAX);
+
+        put_le16(p + 60, nb_sectors);
+        put_le16(p + 61, nb_sectors >> 16);
+        put_le16(p + 100, 0);
+        put_le16(p + 101, 0);
+        put_le16(p + 102, 0);
+        put_le16(p + 103, 0);
+        return;
+    }
+
     if (nb_sectors_lba28 >= 1 << 28) {
         nb_sectors_lba28 = (1 << 28) - 1;
     }
@@ -231,6 +250,14 @@ static void ide_identify(IDEState *s)
     }
     if (dev) {
         put_le16(p + 217, dev->rotation_rate); /* Nominal media rotation rate */
+    }
+
+    if (ide_is_gem5_compatible(s)) {
+        put_le16(p + 62, 0);
+        put_le16(p + 63, 0x04);
+        put_le16(p + 83, (1 << 14) | (1 << 13) | (1 << 12));
+        put_le16(p + 86, (1 << 13) | (1 << 12));
+        put_le16(p + 88, 0x1f);
     }
 
     ide_identify_size(s);
@@ -1714,29 +1741,34 @@ static bool cmd_set_features(IDEState *s, uint8_t cmd)
     case 0x03: /* set transfer mode */
         {
             uint8_t val = s->nsector & 0x07;
+            bool gem5_compatible = ide_is_gem5_compatible(s);
+            uint16_t swdma_modes = gem5_compatible ? 0x00 : 0x07;
+            uint16_t mdma_modes = gem5_compatible ? 0x04 : 0x07;
+            uint16_t udma_modes = gem5_compatible ? 0x1f : 0x3f;
+
             identify_data = (uint16_t *)s->identify_data;
 
             switch (s->nsector >> 3) {
             case 0x00: /* pio default */
             case 0x01: /* pio mode */
-                put_le16(identify_data + 62, 0x07);
-                put_le16(identify_data + 63, 0x07);
-                put_le16(identify_data + 88, 0x3f);
+                put_le16(identify_data + 62, swdma_modes);
+                put_le16(identify_data + 63, mdma_modes);
+                put_le16(identify_data + 88, udma_modes);
                 break;
             case 0x02: /* single word dma mode */
-                put_le16(identify_data + 62, 0x07 | (1 << (val + 8)));
-                put_le16(identify_data + 63, 0x07);
-                put_le16(identify_data + 88, 0x3f);
+                put_le16(identify_data + 62, swdma_modes | (1 << (val + 8)));
+                put_le16(identify_data + 63, mdma_modes);
+                put_le16(identify_data + 88, udma_modes);
                 break;
             case 0x04: /* mdma mode */
-                put_le16(identify_data + 62, 0x07);
-                put_le16(identify_data + 63, 0x07 | (1 << (val + 8)));
-                put_le16(identify_data + 88, 0x3f);
+                put_le16(identify_data + 62, swdma_modes);
+                put_le16(identify_data + 63, mdma_modes | (1 << (val + 8)));
+                put_le16(identify_data + 88, udma_modes);
                 break;
             case 0x08: /* udma mode */
-                put_le16(identify_data + 62, 0x07);
-                put_le16(identify_data + 63, 0x07);
-                put_le16(identify_data + 88, 0x3f | (1 << (val + 8)));
+                put_le16(identify_data + 62, swdma_modes);
+                put_le16(identify_data + 63, mdma_modes);
+                put_le16(identify_data + 88, udma_modes | (1 << (val + 8)));
                 break;
             default:
                 goto abort_cmd;

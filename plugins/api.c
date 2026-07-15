@@ -318,6 +318,35 @@ void *qemu_plugin_insn_haddr(const struct qemu_plugin_insn *insn)
     }
 }
 
+uint64_t qemu_plugin_insn_phys_addr(const struct qemu_plugin_insn *insn)
+{
+#ifdef CONFIG_SOFTMMU
+    const DisasContextBase *db = tcg_ctx->plugin_db;
+    vaddr page0_last = db->pc_first | ~TARGET_PAGE_MASK;
+    void *host_addr;
+
+    if (db->fake_insn) {
+        return UINT64_MAX;
+    }
+
+    if (insn->vaddr <= page0_last) {
+        if (db->host_addr[0] == NULL) {
+            return UINT64_MAX;
+        }
+        host_addr = db->host_addr[0] + insn->vaddr - db->pc_first;
+    } else {
+        if (db->host_addr[1] == NULL) {
+            return UINT64_MAX;
+        }
+        host_addr = db->host_addr[1] + insn->vaddr - (page0_last + 1);
+    }
+
+    return qemu_ram_addr_from_host_nofail(host_addr);
+#else
+    return UINT64_MAX;
+#endif
+}
+
 char *qemu_plugin_insn_disas(const struct qemu_plugin_insn *insn)
 {
     return plugin_disas(tcg_ctx->cpu, tcg_ctx->plugin_db,

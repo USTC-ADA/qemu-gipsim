@@ -527,6 +527,16 @@ QEMU_PLUGIN_API
 void *qemu_plugin_insn_haddr(const struct qemu_plugin_insn *insn);
 
 /**
+ * qemu_plugin_insn_phys_addr() - return RAM physical address of instruction
+ * @insn: opaque instruction handle from qemu_plugin_tb_get_insn()
+ *
+ * Returns the RAM address corresponding to the instruction fetch, or UINT64_MAX
+ * when the translated instruction is not backed by RAM.
+ */
+QEMU_PLUGIN_API
+uint64_t qemu_plugin_insn_phys_addr(const struct qemu_plugin_insn *insn);
+
+/**
  * typedef qemu_plugin_meminfo_t - opaque memory transaction handle
  *
  * This can be further queried using the qemu_plugin_mem_* query
