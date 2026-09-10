@@ -1391,6 +1391,16 @@ static void riscv_tcg_cpu_instance_init(CPUState *cs)
 
     riscv_cpu_add_user_properties(obj);
 
+#ifdef TARGET_RISCV64
+    if (object_dynamic_cast(obj, TYPE_RISCV_CPU_GIPSIM)) {
+        /* RV64GC with the same MSU privilege modes as gem5. Keep rv64's
+         * existing defaults intact; only the named alignment CPU differs.
+         */
+        riscv_cpu_write_misa_bit(cpu, RVH, false);
+        riscv_cpu_write_misa_bit(cpu, RVV, false);
+    }
+#endif
+
     if (riscv_cpu_has_max_extensions(obj)) {
         riscv_init_max_cpu_extensions(obj);
     }

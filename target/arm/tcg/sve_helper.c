@@ -5358,8 +5358,9 @@ bool sve_probe_page(SVEHostPage *info, bool nofault, CPUARMState *env,
                                &info->host, retaddr);
 #else
     CPUTLBEntryFull *full;
-    flags = probe_access_full(env, addr, 0, access_type, mmu_idx, nofault,
-                              &info->host, &full, retaddr);
+    flags = probe_access_full_plugin(env, addr, 0, access_type, mmu_idx,
+                                     nofault, &info->host, &full, retaddr,
+                                     &info->plugin_forced);
 #endif
     info->flags = flags;
 
@@ -5670,7 +5671,6 @@ void sve_ldN_r(CPUARMState *env, uint64_t *vg, const target_ulong addr,
         }
         return;
     }
-
     /* Probe the page(s).  Exit with exception for any invalid page. */
     sve_cont_ldst_pages(&info, FAULT_ALL, env, addr, MMU_DATA_LOAD, retaddr);
 
@@ -5982,6 +5982,7 @@ void sve_ldnfff1_r(CPUARMState *env, void *vg, const target_ulong addr,
     intptr_t reg_off, mem_off, reg_last;
     SVEContLdSt info;
     int flags;
+    bool plugin_forced;
     void *host;
 
     /* Find the active elements.  */
@@ -6002,6 +6003,7 @@ void sve_ldnfff1_r(CPUARMState *env, void *vg, const target_ulong addr,
 
     mem_off = info.mem_off_first[0];
     flags = info.page[0].flags;
+    plugin_forced = info.page[0].plugin_forced;
 
     /*
      * Disable MTE checking if the Tagged bit is not set.  Since TBI must
@@ -6090,7 +6092,7 @@ void sve_ldnfff1_r(CPUARMState *env, void *vg, const target_ulong addr,
      * return (UNKNOWN, FAULT).  For simplicity, we consider gdb and
      * architectural breakpoints the same.
      */
-    if (unlikely(flags & TLB_MMIO)) {
+    if (unlikely(flags & TLB_MMIO) && !plugin_forced) {
         goto do_fault;
     }
 
@@ -6114,7 +6116,11 @@ void sve_ldnfff1_r(CPUARMState *env, void *vg, const target_ulong addr,
                     clear_helper_retaddr();
                     goto do_fault;
                 }
-                host_fn(vd, reg_off, host + mem_off);
+                if (plugin_forced) {
+                    tlb_fn(env, vd, reg_off, addr + mem_off, retaddr);
+                } else {
+                    host_fn(vd, reg_off, host + mem_off);
+                }
             }
             reg_off += 1 << esz;
             mem_off += 1 << msz;
@@ -6786,7 +6792,9 @@ void sve_ldff1_z(CPUARMState *env, void *vd, uint64_t *vg, void *vm,
 
                 sve_probe_page(&info, true, env, addr, 0, MMU_DATA_LOAD,
                                mmu_idx, retaddr);
-                if (unlikely(info.flags & (TLB_INVALID_MASK | TLB_MMIO))) {
+                if (unlikely(info.flags & TLB_INVALID_MASK) ||
+                    (unlikely(info.flags & TLB_MMIO) &&
+                     !info.plugin_forced)) {
                     goto fault;
                 }
                 if (unlikely(info.flags & TLB_WATCHPOINT) &&
@@ -6798,9 +6806,13 @@ void sve_ldff1_z(CPUARMState *env, void *vd, uint64_t *vg, void *vm,
                     goto fault;
                 }
 
-                set_helper_retaddr(retaddr);
-                host_fn(vd, reg_off, info.host);
-                clear_helper_retaddr();
+                if (info.plugin_forced) {
+                    tlb_fn(env, vd, reg_off, addr, retaddr);
+                } else {
+                    set_helper_retaddr(retaddr);
+                    host_fn(vd, reg_off, info.host);
+                    clear_helper_retaddr();
+                }
             }
             reg_off += esize;
         } while (reg_off & 63);

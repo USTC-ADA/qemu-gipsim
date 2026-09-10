@@ -52,6 +52,7 @@
 #include "exec/ram_addr.h"
 #include "qemu/plugin-memory.h"
 #include "hw/boards.h"
+#include "sysemu/runstate.h"
 #else
 #include "qemu.h"
 #ifdef CONFIG_LINUX
@@ -88,6 +89,16 @@ void qemu_plugin_register_vcpu_exit_cb(qemu_plugin_id_t id,
                                        qemu_plugin_vcpu_simple_cb_t cb)
 {
     plugin_register_cb(id, QEMU_PLUGIN_EV_VCPU_EXIT, cb);
+}
+
+void qemu_plugin_request_shutdown(void)
+{
+#ifdef CONFIG_USER_ONLY
+    qemu_plugin_user_exit();
+    exit(EXIT_SUCCESS);
+#else
+    qemu_system_shutdown_request(SHUTDOWN_CAUSE_HOST_QMP_QUIT);
+#endif
 }
 
 static bool tb_is_mem_only(void)
@@ -143,6 +154,22 @@ void qemu_plugin_register_vcpu_insn_exec_cb(struct qemu_plugin_insn *insn,
     if (!tb_is_mem_only()) {
         plugin_register_dyn_cb__udata(&insn->insn_cbs, cb, flags, udata);
     }
+}
+
+void qemu_plugin_register_vcpu_insn_retire_cb(
+    struct qemu_plugin_insn *insn,
+    qemu_plugin_vcpu_udata_cb_t cb,
+    enum qemu_plugin_cb_flags flags,
+    void *udata)
+{
+    /*
+     * An MMIO instruction can be rewound and translated again with
+     * CF_MEMI_ONLY.  Its original execution callback has already run, while
+     * successful completion happens only in the replay.  Keep the retire
+     * callback in that replay so a plugin can close the one pending dynamic
+     * instruction without counting a second start.
+     */
+    plugin_register_dyn_cb__udata(&insn->retire_cbs, cb, flags, udata);
 }
 
 void qemu_plugin_register_vcpu_insn_exec_cond_cb(
@@ -204,6 +231,12 @@ void qemu_plugin_register_vcpu_tb_trans_cb(qemu_plugin_id_t id,
                                            qemu_plugin_vcpu_tb_trans_cb_t cb)
 {
     plugin_register_cb(id, QEMU_PLUGIN_EV_VCPU_TB_TRANS, cb);
+}
+
+void qemu_plugin_register_vcpu_tb_trans_cb_pcrel(
+    qemu_plugin_id_t id, qemu_plugin_vcpu_tb_trans_cb_t cb)
+{
+    plugin_register_cb_pcrel(id, cb);
 }
 
 void qemu_plugin_register_vcpu_syscall_cb(qemu_plugin_id_t id,
@@ -283,6 +316,26 @@ uint64_t qemu_plugin_insn_vaddr(const struct qemu_plugin_insn *insn)
     return insn->vaddr;
 }
 
+bool qemu_plugin_insn_paddr(const struct qemu_plugin_insn *insn,
+                          uint64_t *paddr)
+{
+    const DisasContextBase *db = tcg_ctx->plugin_db;
+    vaddr page1 = (db->pc_first & TARGET_PAGE_MASK) + TARGET_PAGE_SIZE;
+
+    if (!paddr || db->fake_insn) {
+        return false;
+    }
+    if (insn->vaddr < page1) {
+        *paddr = db->tb->guest_phys_addr[0] + insn->vaddr - db->pc_first;
+    } else {
+        if (db->tb->guest_phys_addr[1] == UINT64_MAX) {
+            return false;
+        }
+        *paddr = db->tb->guest_phys_addr[1] + insn->vaddr - page1;
+    }
+    return true;
+}
+
 void *qemu_plugin_insn_haddr(const struct qemu_plugin_insn *insn)
 {
     const DisasContextBase *db = tcg_ctx->plugin_db;
@@ -349,6 +402,67 @@ bool qemu_plugin_mem_is_big_endian(qemu_plugin_meminfo_t info)
 bool qemu_plugin_mem_is_store(qemu_plugin_meminfo_t info)
 {
     return get_plugin_meminfo_rw(info) & QEMU_PLUGIN_MEM_W;
+}
+
+qemu_plugin_mem_value qemu_plugin_mem_get_value(qemu_plugin_meminfo_t info)
+{
+    uint64_t low = current_cpu->neg.plugin_mem_value_low;
+    qemu_plugin_mem_value value;
+
+    switch (qemu_plugin_mem_size_shift(info)) {
+    case 0:
+        value.type = QEMU_PLUGIN_MEM_VALUE_U8;
+        value.data.u8 = low;
+        break;
+    case 1:
+        value.type = QEMU_PLUGIN_MEM_VALUE_U16;
+        value.data.u16 = low;
+        break;
+    case 2:
+        value.type = QEMU_PLUGIN_MEM_VALUE_U32;
+        value.data.u32 = low;
+        break;
+    case 3:
+        value.type = QEMU_PLUGIN_MEM_VALUE_U64;
+        value.data.u64 = low;
+        break;
+    case 4:
+        value.type = QEMU_PLUGIN_MEM_VALUE_U128;
+        value.data.u128.low = low;
+        value.data.u128.high = current_cpu->neg.plugin_mem_value_high;
+        break;
+    default:
+        g_assert_not_reached();
+    }
+    return value;
+}
+
+bool qemu_plugin_mem_is_successful(qemu_plugin_meminfo_t info)
+{
+    return !qemu_plugin_mem_is_store(info) ||
+        current_cpu->neg.plugin_mem_write_succeeded;
+}
+
+bool qemu_plugin_vcpu_translate_vaddr(unsigned int vcpu_index,
+                                      uint64_t vaddr, uint64_t *paddr)
+{
+    CPUState *cpu = qemu_get_cpu(vcpu_index);
+
+    if (!cpu || !paddr) {
+        return false;
+    }
+#ifdef CONFIG_USER_ONLY
+    *paddr = vaddr;
+    return true;
+#else
+    hwaddr page = cpu_get_phys_page_debug(cpu, vaddr);
+
+    if (page == (hwaddr)-1) {
+        return false;
+    }
+    *paddr = page | (vaddr & ~TARGET_PAGE_MASK);
+    return true;
+#endif
 }
 
 /*
@@ -532,6 +646,54 @@ int qemu_plugin_read_register(struct qemu_plugin_register *reg, GByteArray *buf)
     g_assert(current_cpu);
 
     return gdb_read_register(current_cpu, buf, GPOINTER_TO_INT(reg) - 1);
+}
+
+struct qemu_plugin_register *qemu_plugin_find_register(const char *name)
+{
+    g_assert(current_cpu);
+    if (!name) {
+        return NULL;
+    }
+
+    g_autoptr(GArray) regs = gdb_get_register_list(current_cpu);
+    for (size_t i = 0; i < regs->len; i++) {
+        const GDBRegDesc *reg = &g_array_index(regs, GDBRegDesc, i);
+
+        if (reg->name && strcmp(reg->name, name) == 0) {
+            return GINT_TO_POINTER(reg->gdb_reg + 1);
+        }
+    }
+    return NULL;
+}
+
+int qemu_plugin_read_register_bytes(struct qemu_plugin_register *reg,
+                                   uint8_t *data, size_t capacity)
+{
+    CPUPluginState *plugin_state;
+    GByteArray *bytes;
+    int size;
+
+    g_assert(current_cpu);
+    if (!reg || !data) {
+        return -1;
+    }
+    plugin_state = current_cpu->plugin_state;
+    if (!plugin_state->register_read_buffer) {
+        plugin_state->register_read_buffer = g_byte_array_new();
+    }
+    /* GDB's register readers append to GByteArray. Reuse per-vCPU scratch
+     * storage inside QEMU; callers only see their own byte arrays. */
+    bytes = plugin_state->register_read_buffer;
+    g_byte_array_set_size(bytes, 0);
+    size = qemu_plugin_read_register(reg, bytes);
+    if (size <= 0 || size != bytes->len) {
+        return -1;
+    }
+    if (capacity < (size_t)size) {
+        return -ENOSPC;
+    }
+    memcpy(data, bytes->data, size);
+    return size;
 }
 
 struct qemu_plugin_scoreboard *qemu_plugin_scoreboard_new(size_t element_size)

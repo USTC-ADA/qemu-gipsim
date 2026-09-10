@@ -819,7 +819,8 @@ static inline void gen_bx_excret_final_code(DisasContext *s)
     if (s->ss_active) {
         gen_singlestep_exception(s);
     } else {
-        tcg_gen_exit_tb(NULL, 0);
+        /* The ordinary BX path has completed; EXC_RETURN below has not. */
+        tcg_gen_exit_tb_retire(NULL, 0);
     }
     set_disas_label(s, excret_label);
     /* Yes: this is an exception return.
@@ -2521,7 +2522,7 @@ static int disas_dsp_insn(DisasContext *s, uint32_t insn)
 
 static void gen_goto_ptr(void)
 {
-    tcg_gen_lookup_and_goto_ptr();
+    tcg_gen_lookup_and_goto_ptr_retire();
 }
 
 /* This will end the TB but doesn't guarantee we'll return to
@@ -2531,21 +2532,9 @@ static void gen_goto_ptr(void)
 static void gen_goto_tb(DisasContext *s, int n, target_long diff)
 {
     if (translator_use_goto_tb(&s->base, s->pc_curr + diff)) {
-        /*
-         * For pcrel, the pc must always be up-to-date on entry to
-         * the linked TB, so that it can use simple additions for all
-         * further adjustments.  For !pcrel, the linked TB is compiled
-         * to know its full virtual address, so we can delay the
-         * update to pc to the unlinked path.  A long chain of links
-         * can thus avoid many updates to the PC.
-         */
-        if (tb_cflags(s->base.tb) & CF_PCREL) {
-            gen_update_pc(s, diff);
-            tcg_gen_goto_tb(n);
-        } else {
-            tcg_gen_goto_tb(n);
-            gen_update_pc(s, diff);
-        }
+        /* The retire callback observes the architectural next PC. */
+        gen_update_pc(s, diff);
+        tcg_gen_goto_tb_retire(n);
         tcg_gen_exit_tb(s->base.tb, n);
     } else {
         gen_update_pc(s, diff);
@@ -8033,7 +8022,7 @@ static void arm_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
             /* fall through */
         default:
             /* indicate that the hash table must be used to find the next TB */
-            tcg_gen_exit_tb(NULL, 0);
+            tcg_gen_exit_tb_retire(NULL, 0);
             break;
         case DISAS_NORETURN:
             /* nothing more to generate */
@@ -8044,7 +8033,7 @@ static void arm_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
              * The helper doesn't necessarily throw an exception, but we
              * must go back to the main loop to check for interrupts anyway.
              */
-            tcg_gen_exit_tb(NULL, 0);
+            tcg_gen_exit_tb_retire(NULL, 0);
             break;
         case DISAS_WFE:
             gen_helper_wfe(tcg_env);

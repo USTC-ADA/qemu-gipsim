@@ -2672,6 +2672,12 @@ uint64_t gt_get_countervalue(CPUARMState *env)
 {
     ARMCPU *cpu = env_archcpu(env);
 
+    if (arm_feature(env, ARM_FEATURE_GIPSIM_TRACE)) {
+        /* The alignment clock is not an integral number of nanoseconds.
+         * Pair this exact ratio with the ceil inverse in gt_recalc_timer. */
+        return muldiv64(qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL),
+                        cpu->gt_cntfrq_hz, NANOSECONDS_PER_SECOND);
+    }
     return qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) / gt_cntfrq_period_ns(cpu);
 }
 
@@ -2775,7 +2781,24 @@ static void gt_recalc_timer(ARMCPU *cpu, int timeridx)
          * set the timer for as far in the future as possible. When the
          * timer expires we will reset the timer for any remaining period.
          */
-        if (nexttick > INT64_MAX / gt_cntfrq_period_ns(cpu)) {
+        if (arm_feature(&cpu->env, ARM_FEATURE_GIPSIM_TRACE)) {
+            /* ceil(ticks / Hz) in ns; saturate before overflowing. Using
+             * timer_mod_ns bypasses the legacy integer timer scale. */
+            uint64_t seconds = nexttick / cpu->gt_cntfrq_hz;
+            uint64_t remainder = nexttick % cpu->gt_cntfrq_hz;
+            uint64_t ns = INT64_MAX;
+
+            if (seconds < INT64_MAX / NANOSECONDS_PER_SECOND) {
+                ns = seconds * NANOSECONDS_PER_SECOND +
+                    muldiv64(remainder, NANOSECONDS_PER_SECOND,
+                             cpu->gt_cntfrq_hz);
+                if (muldiv64(ns, cpu->gt_cntfrq_hz,
+                             NANOSECONDS_PER_SECOND) < nexttick) {
+                    ns++;
+                }
+            }
+            timer_mod_ns(cpu->gt_timer[timeridx], ns);
+        } else if (nexttick > INT64_MAX / gt_cntfrq_period_ns(cpu)) {
             timer_mod_ns(cpu->gt_timer[timeridx], INT64_MAX);
         } else {
             timer_mod(cpu->gt_timer[timeridx], nexttick);

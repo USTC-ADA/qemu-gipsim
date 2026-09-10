@@ -112,6 +112,11 @@ static bool trans_wfi(DisasContext *ctx, arg_wfi *a)
     decode_save_opc(ctx);
     gen_update_pc(ctx, ctx->cur_insn_len);
     gen_helper_wfi(tcg_env);
+    /* helper_wfi returns only on the successful halt path.  Fault paths
+     * leave through cpu_loop_exit before this point, so the retire marker is
+     * emitted exactly once and only for a normally completed WFI. */
+    exit_tb(ctx);
+    ctx->base.is_jmp = DISAS_NORETURN;
     return true;
 #else
     return false;

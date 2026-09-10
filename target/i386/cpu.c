@@ -884,7 +884,8 @@ void x86_cpu_vendor_words2str(char *dst, uint32_t vendor1,
 #else
 #define CPUID_7_0_EDX_KERNEL_FEATURES 0
 #endif
-#define TCG_7_0_EDX_FEATURES (CPUID_7_0_EDX_FSRM | CPUID_7_0_EDX_KERNEL_FEATURES)
+#define TCG_7_0_EDX_FEATURES (CPUID_7_0_EDX_FSRM | CPUID_7_0_EDX_SERIALIZE | \
+                              CPUID_7_0_EDX_KERNEL_FEATURES)
 
 #define TCG_7_1_EAX_FEATURES (CPUID_7_1_EAX_FZRM | CPUID_7_1_EAX_FSRS | \
           CPUID_7_1_EAX_FSRC | CPUID_7_1_EAX_CMPCCXADD)
@@ -5367,6 +5368,38 @@ static const TypeInfo max_x86_cpu_type_info = {
     .class_init = max_x86_cpu_class_init,
 };
 
+/* Dedicated exhaustive-ISA profile.  Existing qemu64 and board defaults are
+ * intentionally unchanged; coverage workloads opt in with -cpu gipsim. */
+static void gipsim_x86_cpu_class_init(ObjectClass *oc, void *data)
+{
+    X86CPUClass *xcc = X86_CPU_CLASS(oc);
+
+    xcc->model_description =
+        "Exhaustive gem5-alignment ISA profile for gipsim tracing";
+}
+
+static void gipsim_x86_cpu_initfn(Object *obj)
+{
+    /* Identity of gem5's default X86ISA, isolated from all existing models.
+     * Capability enumeration is audited separately from these identity bits.
+     */
+    object_property_set_str(obj, "vendor", "HygonGenuine", &error_abort);
+    object_property_set_str(obj, "model-id", "Fake gem5 x86_64 CPU",
+                            &error_abort);
+    /* CPUID EAX 0x00020f51: extended model 2, base family 15/model 5.
+     * The extended-family field is zero (bits 27:20), not two. */
+    object_property_set_int(obj, "family", 15, &error_abort);
+    object_property_set_int(obj, "model", 37, &error_abort);
+    object_property_set_int(obj, "stepping", 1, &error_abort);
+}
+
+static const TypeInfo gipsim_x86_cpu_type_info = {
+    .name = X86_CPU_TYPE_NAME("gipsim"),
+    .parent = X86_CPU_TYPE_NAME("max"),
+    .instance_init = gipsim_x86_cpu_initfn,
+    .class_init = gipsim_x86_cpu_class_init,
+};
+
 static char *feature_word_description(FeatureWordInfo *f, uint32_t bit)
 {
     assert(f->type == CPUID_FEATURE_WORD || f->type == MSR_FEATURE_WORD);
@@ -7407,6 +7440,16 @@ void x86_cpu_expand_features(X86CPU *cpu, Error **errp)
         }
     }
 
+    /* SERIALIZE was added to TCG's implementation capability for the
+     * dedicated gipsim coverage CPU.  Do not let that capability silently
+     * change the pre-existing TCG "max" model: only the new profile (or an
+     * explicit user request) advertises the bit. */
+    if (tcg_enabled() && cpu->max_features &&
+        !object_dynamic_cast(OBJECT(cpu), X86_CPU_TYPE_NAME("gipsim")) &&
+        !(env->user_features[FEAT_7_0_EDX] & CPUID_7_0_EDX_SERIALIZE)) {
+        env->features[FEAT_7_0_EDX] &= ~CPUID_7_0_EDX_SERIALIZE;
+    }
+
     for (i = 0; i < ARRAY_SIZE(feature_dependencies); i++) {
         FeatureDep *d = &feature_dependencies[i];
         if (!(env->features[d->from.index] & d->from.mask)) {
@@ -8508,6 +8551,7 @@ static void x86_cpu_register_types(void)
         x86_register_cpudef_types(&builtin_x86_defs[i]);
     }
     type_register_static(&max_x86_cpu_type_info);
+    type_register_static(&gipsim_x86_cpu_type_info);
     type_register_static(&x86_base_cpu_type_info);
 }
 

@@ -369,7 +369,8 @@ void helper_wfi(CPURISCVState *env)
     } else {
         cs->halted = 1;
         cs->exception_index = EXCP_HLT;
-        cpu_loop_exit(cs);
+        /* Return to translated code so it can cross the architectural
+         * retirement point before explicitly leaving the TB. */
     }
 }
 

@@ -21,6 +21,7 @@
 #include "qemu/host-utils.h"
 #include "cpu.h"
 #include "exec/exec-all.h"
+#include "exec/plugin-gen.h"
 #include "tcg/tcg-op.h"
 #include "tcg/tcg-op-gvec.h"
 #include "exec/translator.h"
@@ -123,6 +124,7 @@ typedef struct DisasContext {
     int cpuid_ext3_features;
     int cpuid_7_0_ebx_features;
     int cpuid_7_0_ecx_features;
+    int cpuid_7_0_edx_features;
     int cpuid_7_1_eax_features;
     int cpuid_xsave_features;
 
@@ -1942,9 +1944,9 @@ static void gen_lea_ss_ofs(DisasContext *s, TCGv dest, TCGv src, target_ulong of
 }
 
 /* Generate a push. It depends on ss32, addseg and dflag.  */
-static void gen_push_v(DisasContext *s, TCGv val)
+static void gen_push_v_ot(DisasContext *s, TCGv val, MemOp ot)
 {
-    MemOp d_ot = mo_pushpop(s, s->dflag);
+    MemOp d_ot = mo_pushpop(s, ot);
     MemOp a_ot = mo_stacksize(s);
     int size = 1 << d_ot;
     TCGv new_esp = tcg_temp_new();
@@ -1957,15 +1959,25 @@ static void gen_push_v(DisasContext *s, TCGv val)
     gen_op_mov_reg_v(s, a_ot, R_ESP, new_esp);
 }
 
-/* two step pop is necessary for precise exceptions */
-static MemOp gen_pop_T0(DisasContext *s)
+static void gen_push_v(DisasContext *s, TCGv val)
 {
-    MemOp d_ot = mo_pushpop(s, s->dflag);
+    gen_push_v_ot(s, val, s->dflag);
+}
+
+/* two step pop is necessary for precise exceptions */
+static MemOp gen_pop_T0_ot(DisasContext *s, MemOp ot)
+{
+    MemOp d_ot = mo_pushpop(s, ot);
 
     gen_lea_ss_ofs(s, s->T0, cpu_regs[R_ESP], 0);
     gen_op_ld_v(s, d_ot, s->T0, s->T0);
 
     return d_ot;
+}
+
+static MemOp gen_pop_T0(DisasContext *s)
+{
+    return gen_pop_T0_ot(s, s->dflag);
 }
 
 static inline void gen_pop_update(DisasContext *s, MemOp ot)
@@ -2175,9 +2187,9 @@ gen_eob(DisasContext *s, int mode)
     } else if (mode == DISAS_JUMP &&
                /* give irqs a chance to happen */
                !inhibit_reset) {
-        tcg_gen_lookup_and_goto_ptr();
+        tcg_gen_lookup_and_goto_ptr_retire();
     } else {
-        tcg_gen_exit_tb(NULL, 0);
+        tcg_gen_exit_tb_retire(NULL, 0);
     }
 
     s->base.is_jmp = DISAS_NORETURN;
@@ -2223,10 +2235,10 @@ static void gen_jmp_rel(DisasContext *s, MemOp ot, int diff, int tb_num)
 
     if (use_goto_tb && translator_use_goto_tb(&s->base, new_pc)) {
         /* jump to same page: we can use a direct jump */
-        tcg_gen_goto_tb(tb_num);
         if (!(tb_cflags(s->base.tb) & CF_PCREL)) {
             tcg_gen_movi_tl(cpu_eip, new_eip);
         }
+        tcg_gen_goto_tb_retire(tb_num);
         tcg_gen_exit_tb(s->base.tb, tb_num);
         s->base.is_jmp = DISAS_NORETURN;
     } else {
@@ -3290,6 +3302,8 @@ static void disas_insn_old(DisasContext *s, CPUState *cpu, int b)
             }
             gen_update_cc_op(s);
             gen_update_eip_cur(s);
+            /* MWAIT advances EIP before suspending/pausing the vCPU. */
+            plugin_gen_insn_retire();
             gen_helper_mwait(tcg_env, cur_insn_len_i32(s));
             s->base.is_jmp = DISAS_NORETURN;
             break;
@@ -3374,7 +3388,7 @@ static void disas_insn_old(DisasContext *s, CPUState *cpu, int b)
              */
             gen_helper_vmrun(tcg_env, tcg_constant_i32(s->aflag - 1),
                              cur_insn_len_i32(s));
-            tcg_gen_exit_tb(NULL, 0);
+            tcg_gen_exit_tb_retire(NULL, 0);
             s->base.is_jmp = DISAS_NORETURN;
             break;
 
@@ -3527,6 +3541,17 @@ static void disas_insn_old(DisasContext *s, CPUState *cpu, int b)
                                   cpu_regs[R_EDX]);
             tcg_gen_trunc_tl_i32(s->tmp2_i32, cpu_regs[R_ECX]);
             gen_helper_wrpkru(tcg_env, s->tmp2_i32, s->tmp1_i64);
+            break;
+
+        case 0xe8: /* serialize */
+            if (!(s->cpuid_7_0_edx_features & CPUID_7_0_EDX_SERIALIZE) ||
+                (s->prefix & (PREFIX_LOCK | PREFIX_DATA |
+                              PREFIX_REPZ | PREFIX_REPNZ))) {
+                goto illegal_op;
+            }
+            /* TCG executes guest instructions in program order.  Ending the
+             * TB supplies the architectural serialization boundary. */
+            s->base.is_jmp = DISAS_EOB_NEXT;
             break;
 
         CASE_MODRM_OP(6): /* lmsw */
@@ -3924,6 +3949,7 @@ static void i386_tr_init_disas_context(DisasContextBase *dcbase, CPUState *cpu)
     dc->cpuid_ext3_features = env->features[FEAT_8000_0001_ECX];
     dc->cpuid_7_0_ebx_features = env->features[FEAT_7_0_EBX];
     dc->cpuid_7_0_ecx_features = env->features[FEAT_7_0_ECX];
+    dc->cpuid_7_0_edx_features = env->features[FEAT_7_0_EDX];
     dc->cpuid_7_1_eax_features = env->features[FEAT_7_1_EAX];
     dc->cpuid_xsave_features = env->features[FEAT_XSAVE];
     dc->jmp_opt = !((cflags & CF_NO_GOTO_TB) ||
@@ -3991,9 +4017,33 @@ static void i386_tr_translate_insn(DisasContextBase *dcbase, CPUState *cpu)
 #endif
 
     switch (sigsetjmp(dc->jmpbuf, 0)) {
-    case 0:
+    case 0: {
+        /*
+         * gem5 encodes x86 pseudo-ops as 0f 04 plus a 16-bit function.
+         * Decode the two ROI markers independently of any plugin or machine.
+         */
+        CPUX86State *env = cpu_env(cpu);
+        target_ulong pc = dc->base.pc_next;
+
+        if (translator_ldub(env, &dc->base, pc) == 0x0f &&
+            translator_ldub(env, &dc->base, pc + 1) == 0x04) {
+            uint16_t func = translator_ldub(env, &dc->base, pc + 2) |
+                (translator_ldub(env, &dc->base, pc + 3) << 8);
+
+            if (func == 0x5a || func == 0x5b) {
+                if (object_dynamic_cast(OBJECT(cpu),
+                                        X86_CPU_TYPE_NAME("gipsim"))) {
+                    /* gem5's void pseudo-call returns zero in RAX. */
+                    tcg_gen_movi_tl(cpu_regs[R_EAX], 0);
+                }
+                dc->pc = pc + 4;
+                dc->base.pc_next = dc->pc;
+                return;
+            }
+        }
         disas_insn(dc, cpu);
         break;
+    }
     case 1:
         gen_exception_gpf(dc);
         break;

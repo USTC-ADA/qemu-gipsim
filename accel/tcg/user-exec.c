@@ -848,13 +848,16 @@ void *probe_access(CPUArchState *env, vaddr addr, int size,
 }
 
 tb_page_addr_t get_page_addr_code_hostp(CPUArchState *env, vaddr addr,
-                                        void **hostp)
+                                        void **hostp, uint64_t *guest_phys)
 {
     int flags;
 
     flags = probe_access_internal(env, addr, 1, MMU_INST_FETCH, false, 0);
     g_assert(flags == 0);
 
+    if (guest_phys) {
+        *guest_phys = addr;
+    }
     if (hostp) {
         *hostp = g2h_untagged(addr);
     }

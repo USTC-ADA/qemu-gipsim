@@ -374,6 +374,14 @@ int probe_access_full(CPUArchState *env, vaddr addr, int size,
                       bool nonfault, void **phost,
                       CPUTLBEntryFull **pfull, uintptr_t retaddr);
 
+/* Like probe_access_full, and report when TLB_MMIO was returned solely to
+ * route a RAM access through plugin memory callbacks. */
+int probe_access_full_plugin(CPUArchState *env, vaddr addr, int size,
+                             MMUAccessType access_type, int mmu_idx,
+                             bool nonfault, void **phost,
+                             CPUTLBEntryFull **pfull, uintptr_t retaddr,
+                             bool *plugin_forced);
+
 /**
  * probe_access_mmu() - Like probe_access_full except cannot fault and
  * doesn't trigger instrumentation.
@@ -490,6 +498,8 @@ struct MemoryRegionSection *iotlb_to_section(CPUState *cpu,
  * get_page_addr_code_hostp()
  * @env: CPUArchState
  * @addr: guest virtual address of guest code
+ * @guest_phys: optional guest physical address of this same fetch, distinct
+ *              from the returned RAM backing offset
  *
  * See get_page_addr_code() (full-system version) for documentation on the
  * return value.
@@ -501,7 +511,7 @@ struct MemoryRegionSection *iotlb_to_section(CPUState *cpu,
  * Note: this function can trigger an exception.
  */
 tb_page_addr_t get_page_addr_code_hostp(CPUArchState *env, vaddr addr,
-                                        void **hostp);
+                                        void **hostp, uint64_t *guest_phys);
 
 /**
  * get_page_addr_code()
@@ -517,7 +527,7 @@ tb_page_addr_t get_page_addr_code_hostp(CPUArchState *env, vaddr addr,
 static inline tb_page_addr_t get_page_addr_code(CPUArchState *env,
                                                 vaddr addr)
 {
-    return get_page_addr_code_hostp(env, addr, NULL);
+    return get_page_addr_code_hostp(env, addr, NULL, NULL);
 }
 
 #if defined(CONFIG_USER_ONLY)

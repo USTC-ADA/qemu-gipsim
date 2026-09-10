@@ -35,13 +35,27 @@ enum plugin_gen_from {
     PLUGIN_GEN_FROM_INSN,
     PLUGIN_GEN_AFTER_INSN,
     PLUGIN_GEN_AFTER_TB,
+    PLUGIN_GEN_INSN_RETIRE,
 };
 
-/* called before finishing a TB with exit_tb, goto_tb or goto_ptr */
 void plugin_gen_disable_mem_helpers(void)
 {
     if (tcg_ctx->plugin_insn) {
         tcg_gen_plugin_cb(PLUGIN_GEN_AFTER_TB);
+    }
+}
+
+void plugin_gen_enable_mem_helpers(void)
+{
+    if (tcg_ctx->plugin_insn) {
+        tcg_ctx->plugin_insn->calls_helpers = true;
+    }
+}
+
+void plugin_gen_insn_retire(void)
+{
+    if (tcg_ctx->plugin_insn) {
+        tcg_gen_plugin_cb(PLUGIN_GEN_INSN_RETIRE);
     }
 }
 
@@ -233,6 +247,17 @@ static void inject_cb(struct qemu_plugin_dyn_cb *cb)
     }
 }
 
+static void inject_callbacks(const GArray *callbacks)
+{
+    if (!callbacks) {
+        return;
+    }
+    for (guint i = 0; i < callbacks->len; i++) {
+        inject_cb(&g_array_index(
+            callbacks, struct qemu_plugin_dyn_cb, i));
+    }
+}
+
 static void inject_mem_cb(struct qemu_plugin_dyn_cb *cb,
                           enum qemu_plugin_mem_rw rw,
                           qemu_plugin_meminfo_t meminfo, TCGv_i64 addr)
@@ -288,8 +313,6 @@ static void plugin_gen_inject(struct qemu_plugin_tb *plugin_tb)
         {
             enum plugin_gen_from from = op->args[0];
             struct qemu_plugin_insn *insn = NULL;
-            const GArray *cbs;
-            int i, n;
 
             if (insn_idx >= 0) {
                 insn = g_ptr_array_index(plugin_tb->insns, insn_idx);
@@ -304,21 +327,29 @@ static void plugin_gen_inject(struct qemu_plugin_tb *plugin_tb)
                 }
                 break;
 
+            case PLUGIN_GEN_INSN_RETIRE:
+                assert(insn != NULL);
+                if (insn->mem_helper) {
+                    gen_disable_mem_helper();
+                }
+                inject_callbacks(insn->retire_cbs);
+                break;
+
             case PLUGIN_GEN_AFTER_INSN:
                 assert(insn != NULL);
                 if (insn->mem_helper) {
                     gen_disable_mem_helper();
                 }
+                /* Normal fall-through retirement.  Explicit retirement
+                 * markers are immediately before terminal TCG exits, so
+                 * their dynamic paths cannot reach this marker as well. */
+                inject_callbacks(insn->retire_cbs);
                 break;
 
             case PLUGIN_GEN_FROM_TB:
                 assert(insn == NULL);
 
-                cbs = plugin_tb->cbs;
-                for (i = 0, n = (cbs ? cbs->len : 0); i < n; i++) {
-                    inject_cb(
-                        &g_array_index(cbs, struct qemu_plugin_dyn_cb, i));
-                }
+                inject_callbacks(plugin_tb->cbs);
                 break;
 
             case PLUGIN_GEN_FROM_INSN:
@@ -326,11 +357,7 @@ static void plugin_gen_inject(struct qemu_plugin_tb *plugin_tb)
 
                 gen_enable_mem_helper(plugin_tb, insn);
 
-                cbs = insn->insn_cbs;
-                for (i = 0, n = (cbs ? cbs->len : 0); i < n; i++) {
-                    inject_cb(
-                        &g_array_index(cbs, struct qemu_plugin_dyn_cb, i));
-                }
+                inject_callbacks(insn->insn_cbs);
                 break;
 
             default:
@@ -351,7 +378,7 @@ static void plugin_gen_inject(struct qemu_plugin_tb *plugin_tb)
                  ? QEMU_PLUGIN_MEM_W : QEMU_PLUGIN_MEM_R);
             struct qemu_plugin_insn *insn;
             const GArray *cbs;
-            int i, n;
+            guint i, n;
 
             assert(insn_idx >= 0);
             insn = g_ptr_array_index(plugin_tb->insns, insn_idx);
@@ -428,6 +455,9 @@ void plugin_gen_insn_start(CPUState *cpu, const DisasContextBase *db)
     insn->mem_helper = false;
     if (insn->insn_cbs) {
         g_array_set_size(insn->insn_cbs, 0);
+    }
+    if (insn->retire_cbs) {
+        g_array_set_size(insn->retire_cbs, 0);
     }
     if (insn->mem_cbs) {
         g_array_set_size(insn->mem_cbs, 0);

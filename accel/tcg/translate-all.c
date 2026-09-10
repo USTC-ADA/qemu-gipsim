@@ -295,11 +295,12 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     int gen_code_size, search_size, max_insns;
     int64_t ti;
     void *host_pc;
+    uint64_t guest_phys_pc;
 
     assert_memory_lock();
     qemu_thread_jit_write();
 
-    phys_pc = get_page_addr_code_hostp(env, pc, &host_pc);
+    phys_pc = get_page_addr_code_hostp(env, pc, &host_pc, &guest_phys_pc);
 
     if (phys_pc == -1) {
         /* Generate a one-shot TB with 1 insn in it */
@@ -334,6 +335,9 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->cflags = cflags;
     tb_set_page_addr0(tb, phys_pc);
     tb_set_page_addr1(tb, -1);
+    tb->guest_phys_addr[0] = guest_phys_pc;
+    tb->plugin_pc = pc;
+    tb->guest_phys_addr[1] = UINT64_MAX;
     if (phys_pc != -1) {
         tb_lock_page0(phys_pc);
     }

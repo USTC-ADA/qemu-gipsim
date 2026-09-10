@@ -204,7 +204,7 @@ static bool gen_pop(DisasContext *ctx, arg_cmpp *a, bool ret, bool ret_val)
     if (ret) {
         TCGv ret_addr = get_gpr(ctx, xRA, EXT_SIGN);
         tcg_gen_mov_tl(cpu_pc, ret_addr);
-        tcg_gen_lookup_and_goto_ptr();
+        tcg_gen_lookup_and_goto_ptr_retire();
         ctx->base.is_jmp = DISAS_NORETURN;
     }
 
@@ -311,7 +311,7 @@ static bool trans_cm_jalt(DisasContext *ctx, arg_cm_jalt *a)
 
     tcg_gen_mov_tl(cpu_pc, addr);
 
-    tcg_gen_lookup_and_goto_ptr();
+    tcg_gen_lookup_and_goto_ptr_retire();
     ctx->base.is_jmp = DISAS_NORETURN;
     return true;
 }

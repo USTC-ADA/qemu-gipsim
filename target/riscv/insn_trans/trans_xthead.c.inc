@@ -999,7 +999,7 @@ static void gen_th_sync_local(DisasContext *ctx)
      * by exiting the translation block.
      */
     gen_update_pc(ctx, ctx->cur_insn_len);
-    tcg_gen_exit_tb(NULL, 0);
+    tcg_gen_exit_tb_retire(NULL, 0);
     ctx->base.is_jmp = DISAS_NORETURN;
 }
 

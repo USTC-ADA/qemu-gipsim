@@ -49,11 +49,14 @@ static bool tb_cmp(const void *ap, const void *bp)
     const TranslationBlock *b = bp;
 
     return ((tb_cflags(a) & CF_PCREL || a->pc == b->pc) &&
+            (!(tb_cflags(a) & CF_PLUGIN_PC) || a->plugin_pc == b->plugin_pc) &&
             a->cs_base == b->cs_base &&
             a->flags == b->flags &&
             (tb_cflags(a) & ~CF_INVALID) == (tb_cflags(b) & ~CF_INVALID) &&
             tb_page_addr0(a) == tb_page_addr0(b) &&
-            tb_page_addr1(a) == tb_page_addr1(b));
+            tb_page_addr1(a) == tb_page_addr1(b) &&
+            a->guest_phys_addr[0] == b->guest_phys_addr[0] &&
+            a->guest_phys_addr[1] == b->guest_phys_addr[1]);
 }
 
 void tb_htable_init(void)

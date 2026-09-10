@@ -57,13 +57,25 @@ static void plugin_cpu_update__async(CPUState *cpu, run_on_cpu_data data)
 {
     bitmap_copy(cpu->plugin_state->event_mask,
                 &data.host_ulong, QEMU_PLUGIN_EV_MAX);
+    cpu->plugin_state->requires_pc =
+        (data.host_ulong >> QEMU_PLUGIN_EV_MAX) & 1;
     tcg_flush_jmp_cache(cpu);
 }
 
 static void plugin_cpu_update__locked(gpointer k, gpointer v, gpointer udata)
 {
     CPUState *cpu = container_of(k, CPUState, cpu_index);
-    run_on_cpu_data mask = RUN_ON_CPU_HOST_ULONG(*plugin.mask);
+    struct qemu_plugin_cb *cb;
+    unsigned long bits = *plugin.mask;
+
+    QEMU_BUILD_BUG_ON(QEMU_PLUGIN_EV_MAX >= sizeof(bits) * CHAR_BIT);
+    QLIST_FOREACH(cb, &plugin.cb_lists[QEMU_PLUGIN_EV_VCPU_TB_TRANS], entry) {
+        if (!cb->ctx->pc_relative) {
+            bits |= 1UL << QEMU_PLUGIN_EV_MAX;
+            break;
+        }
+    }
+    run_on_cpu_data mask = RUN_ON_CPU_HOST_ULONG(bits);
 
     async_run_on_cpu(cpu, plugin_cpu_update__async, mask);
 }
@@ -81,6 +93,8 @@ void plugin_unregister_cb__locked(struct qemu_plugin_ctx *ctx,
     ctx->callbacks[ev] = NULL;
     if (QLIST_EMPTY_RCU(&plugin.cb_lists[ev])) {
         clear_bit(ev, plugin.mask);
+        g_hash_table_foreach(plugin.cpu_ht, plugin_cpu_update__locked, NULL);
+    } else if (ev == QEMU_PLUGIN_EV_VCPU_TB_TRANS) {
         g_hash_table_foreach(plugin.cpu_ht, plugin_cpu_update__locked, NULL);
     }
 }
@@ -192,12 +206,26 @@ do_plugin_register_cb(qemu_plugin_id_t id, enum qemu_plugin_event ev,
     } else {
         plugin_unregister_cb__locked(ctx, ev);
     }
+    if (func && ev == QEMU_PLUGIN_EV_VCPU_TB_TRANS) {
+        g_hash_table_foreach(plugin.cpu_ht, plugin_cpu_update__locked, NULL);
+    }
 }
 
 void plugin_register_cb(qemu_plugin_id_t id, enum qemu_plugin_event ev,
                         void *func)
 {
     do_plugin_register_cb(id, ev, func, NULL);
+}
+
+void plugin_register_cb_pcrel(qemu_plugin_id_t id,
+                            qemu_plugin_vcpu_tb_trans_cb_t cb)
+{
+    QEMU_LOCK_GUARD(&plugin.lock);
+    struct qemu_plugin_ctx *ctx = plugin_id_to_ctx_locked(id);
+
+    assert(ctx->installing);
+    ctx->pc_relative = true;
+    plugin_register_cb(id, QEMU_PLUGIN_EV_VCPU_TB_TRANS, cb);
 }
 
 void
@@ -602,7 +630,9 @@ void exec_inline_op(enum plugin_dyn_cb_type type,
 }
 
 void qemu_plugin_vcpu_mem_cb(CPUState *cpu, uint64_t vaddr,
-                             MemOpIdx oi, enum qemu_plugin_mem_rw rw)
+                             uint64_t value_low, uint64_t value_high,
+                             bool write_succeeded, MemOpIdx oi,
+                             enum qemu_plugin_mem_rw rw)
 {
     GArray *arr = cpu->neg.plugin_mem_cbs;
     size_t i;
@@ -610,6 +640,9 @@ void qemu_plugin_vcpu_mem_cb(CPUState *cpu, uint64_t vaddr,
     if (arr == NULL) {
         return;
     }
+    cpu->neg.plugin_mem_value_low = value_low;
+    cpu->neg.plugin_mem_value_high = value_high;
+    cpu->neg.plugin_mem_write_succeeded = write_succeeded;
     for (i = 0; i < arr->len; i++) {
         struct qemu_plugin_dyn_cb *cb =
             &g_array_index(arr, struct qemu_plugin_dyn_cb, i);

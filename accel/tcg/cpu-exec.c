@@ -28,6 +28,7 @@
 #include "tcg/tcg.h"
 #include "qemu/atomic.h"
 #include "qemu/rcu.h"
+#include "qemu/plugin.h"
 #include "exec/log.h"
 #include "qemu/main-loop.h"
 #include "sysemu/cpus.h"
@@ -158,6 +159,14 @@ uint32_t curr_cflags(CPUState *cpu)
 {
     uint32_t cflags = cpu->tcg_cflags;
 
+#ifdef CONFIG_PLUGIN
+    /* Legacy translation callbacks capture absolute guest PCs.  Keep the
+     * binding unless every translation plugin opts into PC-relative reuse. */
+    if (cpu->plugin_state->requires_pc) {
+        cflags |= CF_PLUGIN_PC;
+    }
+#endif
+
     /*
      * Record gdb single-step.  We should be exiting the TB by raising
      * EXCP_DEBUG, but to simplify other tests, disable chaining too.
@@ -181,6 +190,7 @@ struct tb_desc {
     uint64_t cs_base;
     CPUArchState *env;
     tb_page_addr_t page_addr0;
+    uint64_t guest_phys_addr0;
     uint32_t flags;
     uint32_t cflags;
 };
@@ -191,7 +201,9 @@ static bool tb_lookup_cmp(const void *p, const void *d)
     const struct tb_desc *desc = d;
 
     if ((tb_cflags(tb) & CF_PCREL || tb->pc == desc->pc) &&
+        (!(tb_cflags(tb) & CF_PLUGIN_PC) || tb->plugin_pc == desc->pc) &&
         tb_page_addr0(tb) == desc->page_addr0 &&
+        tb->guest_phys_addr[0] == desc->guest_phys_addr0 &&
         tb->cs_base == desc->cs_base &&
         tb->flags == desc->flags &&
         tb_cflags(tb) == desc->cflags) {
@@ -201,6 +213,7 @@ static bool tb_lookup_cmp(const void *p, const void *d)
             return true;
         } else {
             tb_page_addr_t phys_page1;
+            uint64_t guest_phys_page1;
             vaddr virt_page1;
 
             /*
@@ -213,8 +226,10 @@ static bool tb_lookup_cmp(const void *p, const void *d)
              * here by the faulting lookup is not premature.
              */
             virt_page1 = TARGET_PAGE_ALIGN(desc->pc);
-            phys_page1 = get_page_addr_code(desc->env, virt_page1);
-            if (tb_phys_page1 == phys_page1) {
+            phys_page1 = get_page_addr_code_hostp(desc->env, virt_page1,
+                                                NULL, &guest_phys_page1);
+            if (tb_phys_page1 == phys_page1 &&
+                tb->guest_phys_addr[1] == guest_phys_page1) {
                 return true;
             }
         }
@@ -235,7 +250,8 @@ static TranslationBlock *tb_htable_lookup(CPUState *cpu, vaddr pc,
     desc.flags = flags;
     desc.cflags = cflags;
     desc.pc = pc;
-    phys_pc = get_page_addr_code(desc.env, pc);
+    phys_pc = get_page_addr_code_hostp(desc.env, pc, NULL,
+                                     &desc.guest_phys_addr0);
     if (phys_pc == -1) {
         return NULL;
     }
@@ -692,10 +708,25 @@ static inline bool cpu_handle_halt(CPUState *cpu)
     return false;
 }
 
+/*
+ * A mem-only replay belongs to the interrupted execution.  A new execution
+ * context needs instruction callbacks, while other one-shot TB flags remain
+ * valid (in particular the instruction count limit).
+ */
+static inline void cpu_clear_mem_only(CPUState *cpu)
+{
+    if (cpu->cflags_next_tb != -1) {
+        cpu->cflags_next_tb &= ~CF_MEMI_ONLY;
+    }
+}
+
 static inline void cpu_handle_debug_exception(CPUState *cpu)
 {
     const TCGCPUOps *tcg_ops = cpu->cc->tcg_ops;
     CPUWatchpoint *wp;
+
+    /* The debugger may change the execution context before resuming. */
+    cpu_clear_mem_only(cpu);
 
     if (!cpu->watchpoint_hit) {
         QTAILQ_FOREACH(wp, &cpu->watchpoints, entry) {
@@ -749,6 +780,7 @@ static inline bool cpu_handle_exception(CPUState *cpu, int *ret)
         const TCGCPUOps *tcg_ops = cpu->cc->tcg_ops;
 
         bql_lock();
+        cpu_clear_mem_only(cpu);
         tcg_ops->do_interrupt(cpu);
         bql_unlock();
         cpu->exception_index = -1;
@@ -822,6 +854,7 @@ static inline bool cpu_handle_interrupt(CPUState *cpu,
             /* Do nothing */
         } else if (interrupt_request & CPU_INTERRUPT_HALT) {
             replay_interrupt();
+            cpu_clear_mem_only(cpu);
             cpu->interrupt_request &= ~CPU_INTERRUPT_HALT;
             cpu->halted = 1;
             cpu->exception_index = EXCP_HLT;
@@ -833,6 +866,7 @@ static inline bool cpu_handle_interrupt(CPUState *cpu,
             X86CPU *x86_cpu = X86_CPU(cpu);
             CPUArchState *env = &x86_cpu->env;
             replay_interrupt();
+            cpu_clear_mem_only(cpu);
             cpu_svm_check_intercept_param(env, SVM_EXIT_INIT, 0, 0);
             do_cpu_init(x86_cpu);
             cpu->exception_index = EXCP_HALTED;
@@ -853,7 +887,14 @@ static inline bool cpu_handle_interrupt(CPUState *cpu,
            and via longjmp via cpu_loop_exit.  */
         else {
             const TCGCPUOps *tcg_ops = cpu->cc->tcg_ops;
+            uint32_t saved_cflags = cpu->cflags_next_tb;
 
+            /*
+             * Clear before the hook: interrupt delivery can also longjmp.
+             * An unhandled interrupt leaves the execution context unchanged,
+             * so retain the original replay request in that case.
+             */
+            cpu_clear_mem_only(cpu);
             if (tcg_ops->cpu_exec_interrupt(cpu, interrupt_request)) {
                 if (!tcg_ops->need_replay_interrupt ||
                     tcg_ops->need_replay_interrupt(interrupt_request)) {
@@ -871,6 +912,8 @@ static inline bool cpu_handle_interrupt(CPUState *cpu,
                 }
                 cpu->exception_index = -1;
                 *last_tb = NULL;
+            } else {
+                cpu->cflags_next_tb = saved_cflags;
             }
             /* The target hook may have updated the 'cpu->interrupt_request';
              * reload the 'interrupt_request' value */
@@ -879,6 +922,7 @@ static inline bool cpu_handle_interrupt(CPUState *cpu,
 #endif /* !CONFIG_USER_ONLY */
         if (interrupt_request & CPU_INTERRUPT_EXITTB) {
             cpu->interrupt_request &= ~CPU_INTERRUPT_EXITTB;
+            cpu_clear_mem_only(cpu);
             /* ensure that no TB jump will be modified as
                the program flow was changed */
             *last_tb = NULL;

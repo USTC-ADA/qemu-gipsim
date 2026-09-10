@@ -278,6 +278,8 @@ static void cpu_common_finalize(Object *obj)
 
 #ifdef CONFIG_PLUGIN
     if (tcg_enabled()) {
+        g_clear_pointer(&cpu->plugin_state->register_read_buffer,
+                        g_byte_array_unref);
         g_free(cpu->plugin_state);
     }
 #endif

@@ -1412,13 +1412,15 @@ static void gen_BZHI(DisasContext *s, X86DecodedInsn *decode)
 
 static void gen_CALL(DisasContext *s, X86DecodedInsn *decode)
 {
-    gen_push_v(s, eip_next_tl(s));
+    /* Near CALL has a fixed 64-bit operand/return-address size in long
+     * mode; 66H does not turn its stack write into a 16-bit push. */
+    gen_push_v_ot(s, eip_next_tl(s), CODE64(s) ? MO_64 : s->dflag);
     gen_JMP(s, decode);
 }
 
 static void gen_CALL_m(DisasContext *s, X86DecodedInsn *decode)
 {
-    gen_push_v(s, eip_next_tl(s));
+    gen_push_v_ot(s, eip_next_tl(s), CODE64(s) ? MO_64 : s->dflag);
     gen_JMP_m(s, decode);
 }
 
@@ -1791,6 +1793,8 @@ static void gen_HLT(DisasContext *s, X86DecodedInsn *decode)
 #ifdef CONFIG_SYSTEM_ONLY
     gen_update_cc_op(s);
     gen_update_eip_next(s);
+    /* HLT completes before the vCPU enters its halted state. */
+    plugin_gen_insn_retire();
     gen_helper_hlt(tcg_env);
     s->base.is_jmp = DISAS_NORETURN;
 #endif
@@ -2569,6 +2573,10 @@ static void gen_PAUSE(DisasContext *s, X86DecodedInsn *decode)
 {
     gen_update_cc_op(s);
     gen_update_eip_next(s);
+    /* helper_pause leaves the TB through cpu_loop_exit.  Architecturally the
+     * PAUSE has already retired, so this normal terminal path needs its one
+     * explicit retire marker before the non-returning helper. */
+    plugin_gen_insn_retire();
     gen_helper_pause(tcg_env);
     s->base.is_jmp = DISAS_NORETURN;
 }
@@ -3345,7 +3353,8 @@ static void gen_RET(DisasContext *s, X86DecodedInsn *decode)
 {
     int16_t adjust = decode->e.op1 == X86_TYPE_I ? decode->immediate : 0;
 
-    MemOp ot = gen_pop_T0(s);
+    /* Near RET has a fixed 64-bit return-address size in 64-bit mode. */
+    MemOp ot = gen_pop_T0_ot(s, CODE64(s) ? MO_64 : s->dflag);
     gen_stack_update(s, adjust + (1 << ot));
     gen_op_jmp_v(s, s->T0);
     gen_bnd_jmp(s);
@@ -3372,7 +3381,11 @@ static void gen_RETF(DisasContext *s, X86DecodedInsn *decode)
     } else {
         gen_update_cc_op(s);
         gen_update_eip_cur(s);
-        gen_helper_lret_protected(tcg_env, tcg_constant_i32(s->dflag - 1),
+        /* gem5 and the architectural long-mode stack format both use
+         * eight-byte slots for RIP and CS. */
+        gen_helper_lret_protected(tcg_env,
+                                  tcg_constant_i32(CODE64(s) ? 2 :
+                                                   s->dflag - 1),
                                   tcg_constant_i32(adjust));
     }
     s->base.is_jmp = DISAS_EOB_ONLY;

@@ -2037,7 +2037,15 @@ static inline void helper_ret_protected(CPUX86State *env, int shift,
             new_cs = popl(&sa) & 0xffff;
             if (is_iret) {
                 new_eflags = popl(&sa);
-                if (new_eflags & VM_MASK) {
+                /* IRETD only performs a protected-to-VM86 return from
+                 * CPL0 outside IA-32e mode.  At any other CPL the popped VM
+                 * bit is not writable, and long mode does not support
+                 * virtual-8086 mode at all. */
+                if ((new_eflags & VM_MASK) && cpl == 0
+#ifdef TARGET_X86_64
+                    && !(env->hflags & HF_LMA_MASK)
+#endif
+                    ) {
                     goto return_to_vm86;
                 }
             }

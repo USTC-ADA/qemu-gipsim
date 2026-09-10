@@ -47,6 +47,7 @@ void tcg_gen_mb(TCGBar);
  * @idx should be one of the TB_EXIT_ values.
  */
 void tcg_gen_exit_tb(const TranslationBlock *tb, unsigned idx);
+void tcg_gen_exit_tb_retire(const TranslationBlock *tb, unsigned idx);
 
 /**
  * tcg_gen_goto_tb() - output goto_tb TCG operation
@@ -62,6 +63,7 @@ void tcg_gen_exit_tb(const TranslationBlock *tb, unsigned idx);
  * changes.
  */
 void tcg_gen_goto_tb(unsigned idx);
+void tcg_gen_goto_tb_retire(unsigned idx);
 
 /**
  * tcg_gen_lookup_and_goto_ptr() - look up the current TB, jump to it if valid
@@ -73,6 +75,7 @@ void tcg_gen_goto_tb(unsigned idx);
  * this op is equivalent to calling tcg_gen_exit_tb() with 0 as the argument.
  */
 void tcg_gen_lookup_and_goto_ptr(void);
+void tcg_gen_lookup_and_goto_ptr_retire(void);
 
 void tcg_gen_plugin_cb(unsigned from);
 void tcg_gen_plugin_mem_cb(TCGv_i64 addr, unsigned meminfo);

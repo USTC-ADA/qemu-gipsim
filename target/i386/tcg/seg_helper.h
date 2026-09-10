@@ -20,6 +20,8 @@
 #ifndef SEG_HELPER_H
 #define SEG_HELPER_H
 
+#include "qemu/plugin.h"
+
 //#define DEBUG_PCALL
 
 #ifdef DEBUG_PCALL
@@ -35,23 +37,44 @@
  * TODO: Convert callers to compute cpu_mmu_index_kernel once
  * and use *_mmuidx_ra directly.
  */
+/*
+ * These accesses implement descriptor-table, interrupt-table and TSS
+ * lookups.  They are internal processor state accesses, not architectural
+ * memory operands of the retiring instruction.  Keep them out of the plugin
+ * memory stream while retaining ordinary StackAccess loads and stores.
+ */
+#define x86_seg_internal_load(e, op) ({                              \
+    CPUState *cs__ = env_cpu(e);                                    \
+    GArray *cbs__ = qemu_plugin_save_and_disable_mem_helpers(cs__); \
+    typeof(op) value__ = (op);                                      \
+    qemu_plugin_restore_mem_helpers(cs__, cbs__);                   \
+    value__;                                                        \
+})
+
+#define x86_seg_internal_store(e, op) do {                          \
+    CPUState *cs__ = env_cpu(e);                                    \
+    GArray *cbs__ = qemu_plugin_save_and_disable_mem_helpers(cs__); \
+    (op);                                                           \
+    qemu_plugin_restore_mem_helpers(cs__, cbs__);                   \
+} while (0)
+
 #define cpu_ldub_kernel_ra(e, p, r) \
-    cpu_ldub_mmuidx_ra(e, p, cpu_mmu_index_kernel(e), r)
+    x86_seg_internal_load(e, cpu_ldub_mmuidx_ra(e, p, cpu_mmu_index_kernel(e), r))
 #define cpu_lduw_kernel_ra(e, p, r) \
-    cpu_lduw_mmuidx_ra(e, p, cpu_mmu_index_kernel(e), r)
+    x86_seg_internal_load(e, cpu_lduw_mmuidx_ra(e, p, cpu_mmu_index_kernel(e), r))
 #define cpu_ldl_kernel_ra(e, p, r) \
-    cpu_ldl_mmuidx_ra(e, p, cpu_mmu_index_kernel(e), r)
+    x86_seg_internal_load(e, cpu_ldl_mmuidx_ra(e, p, cpu_mmu_index_kernel(e), r))
 #define cpu_ldq_kernel_ra(e, p, r) \
-    cpu_ldq_mmuidx_ra(e, p, cpu_mmu_index_kernel(e), r)
+    x86_seg_internal_load(e, cpu_ldq_mmuidx_ra(e, p, cpu_mmu_index_kernel(e), r))
 
 #define cpu_stb_kernel_ra(e, p, v, r) \
-    cpu_stb_mmuidx_ra(e, p, v, cpu_mmu_index_kernel(e), r)
+    x86_seg_internal_store(e, cpu_stb_mmuidx_ra(e, p, v, cpu_mmu_index_kernel(e), r))
 #define cpu_stw_kernel_ra(e, p, v, r) \
-    cpu_stw_mmuidx_ra(e, p, v, cpu_mmu_index_kernel(e), r)
+    x86_seg_internal_store(e, cpu_stw_mmuidx_ra(e, p, v, cpu_mmu_index_kernel(e), r))
 #define cpu_stl_kernel_ra(e, p, v, r) \
-    cpu_stl_mmuidx_ra(e, p, v, cpu_mmu_index_kernel(e), r)
+    x86_seg_internal_store(e, cpu_stl_mmuidx_ra(e, p, v, cpu_mmu_index_kernel(e), r))
 #define cpu_stq_kernel_ra(e, p, v, r) \
-    cpu_stq_mmuidx_ra(e, p, v, cpu_mmu_index_kernel(e), r)
+    x86_seg_internal_store(e, cpu_stq_mmuidx_ra(e, p, v, cpu_mmu_index_kernel(e), r))
 
 #define cpu_ldub_kernel(e, p)    cpu_ldub_kernel_ra(e, p, 0)
 #define cpu_lduw_kernel(e, p)    cpu_lduw_kernel_ra(e, p, 0)

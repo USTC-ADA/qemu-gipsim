@@ -3315,6 +3315,12 @@ void tcg_gen_exit_tb(const TranslationBlock *tb, unsigned idx)
     tcg_gen_op1i(INDEX_op_exit_tb, val);
 }
 
+void tcg_gen_exit_tb_retire(const TranslationBlock *tb, unsigned idx)
+{
+    plugin_gen_insn_retire();
+    tcg_gen_exit_tb(tb, idx);
+}
+
 void tcg_gen_goto_tb(unsigned idx)
 {
     /* We tested CF_NO_GOTO_TB in translator_use_goto_tb. */
@@ -3328,6 +3334,12 @@ void tcg_gen_goto_tb(unsigned idx)
 #endif
     plugin_gen_disable_mem_helpers();
     tcg_gen_op1i(INDEX_op_goto_tb, idx);
+}
+
+void tcg_gen_goto_tb_retire(unsigned idx)
+{
+    plugin_gen_insn_retire();
+    tcg_gen_goto_tb(idx);
 }
 
 void tcg_gen_lookup_and_goto_ptr(void)
@@ -3344,4 +3356,10 @@ void tcg_gen_lookup_and_goto_ptr(void)
     gen_helper_lookup_tb_ptr(ptr, tcg_env);
     tcg_gen_op1i(INDEX_op_goto_ptr, tcgv_ptr_arg(ptr));
     tcg_temp_free_ptr(ptr);
+}
+
+void tcg_gen_lookup_and_goto_ptr_retire(void)
+{
+    plugin_gen_insn_retire();
+    tcg_gen_lookup_and_goto_ptr();
 }

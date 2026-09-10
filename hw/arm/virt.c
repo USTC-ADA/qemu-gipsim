@@ -3045,6 +3045,7 @@ static void virt_machine_class_init(ObjectClass *oc, void *data)
         ARM_CPU_TYPE_NAME("neoverse-n1"),
         ARM_CPU_TYPE_NAME("neoverse-v1"),
         ARM_CPU_TYPE_NAME("neoverse-n2"),
+        ARM_CPU_TYPE_NAME("gipsim"),
 #endif /* TARGET_AARCH64 */
 #endif /* CONFIG_TCG */
 #ifdef TARGET_AARCH64

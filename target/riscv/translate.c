@@ -267,7 +267,7 @@ static void lookup_and_goto_ptr(DisasContext *ctx)
         gen_helper_itrigger_match(tcg_env);
     }
 #endif
-    tcg_gen_lookup_and_goto_ptr();
+    tcg_gen_lookup_and_goto_ptr_retire();
 }
 
 static void exit_tb(DisasContext *ctx)
@@ -277,7 +277,7 @@ static void exit_tb(DisasContext *ctx)
         gen_helper_itrigger_match(tcg_env);
     }
 #endif
-    tcg_gen_exit_tb(NULL, 0);
+    tcg_gen_exit_tb_retire(NULL, 0);
 }
 
 static void gen_goto_tb(DisasContext *ctx, int n, target_long diff)
@@ -289,21 +289,9 @@ static void gen_goto_tb(DisasContext *ctx, int n, target_long diff)
       * direct block chain benefits will be small.
       */
     if (translator_use_goto_tb(&ctx->base, dest) && !ctx->itrigger) {
-        /*
-         * For pcrel, the pc must always be up-to-date on entry to
-         * the linked TB, so that it can use simple additions for all
-         * further adjustments.  For !pcrel, the linked TB is compiled
-         * to know its full virtual address, so we can delay the
-         * update to pc to the unlinked path.  A long chain of links
-         * can thus avoid many updates to the PC.
-         */
-        if (tb_cflags(ctx->base.tb) & CF_PCREL) {
-            gen_update_pc(ctx, diff);
-            tcg_gen_goto_tb(n);
-        } else {
-            tcg_gen_goto_tb(n);
-            gen_update_pc(ctx, diff);
-        }
+        /* The retire callback observes the architectural next PC. */
+        gen_update_pc(ctx, diff);
+        tcg_gen_goto_tb_retire(n);
         tcg_gen_exit_tb(ctx->base.tb, n);
     } else {
         gen_update_pc(ctx, diff);
@@ -1192,6 +1180,19 @@ static void decode_opc(CPURISCVState *env, DisasContext *ctx, uint16_t opcode)
                              translator_lduw(env, &ctx->base,
                                              ctx->base.pc_next + 2));
         ctx->opcode = opcode32;
+
+        /* gem5-compatible m5_work_begin/m5_work_end pseudo-instructions. */
+        if (opcode32 == (0x0000007b | (0x5a << 25)) ||
+            opcode32 == (0x0000007b | (0x5b << 25))) {
+            if (object_dynamic_cast(OBJECT(env_archcpu(env)),
+                                    TYPE_RISCV_CPU_GIPSIM)) {
+                /* gem5's generated M5Op writes both result operands, even
+                 * in RV64 mode: its unused a1 temporary starts at zero. */
+                gen_set_gpri(ctx, 10, 0);
+                gen_set_gpri(ctx, 11, 0);
+            }
+            return;
+        }
 
         for (guint i = 0; i < ctx->decoders->len; ++i) {
             riscv_cpu_decode_fn func = g_ptr_array_index(ctx->decoders, i);

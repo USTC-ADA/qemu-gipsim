@@ -114,12 +114,14 @@ struct qemu_plugin_dyn_cb {
 struct qemu_plugin_insn {
     uint64_t vaddr;
     GArray *insn_cbs;
+    GArray *retire_cbs;
     GArray *mem_cbs;
     uint8_t len;
     bool calls_helpers;
 
     /* if set, the instruction calls helpers that might access guest memory */
     bool mem_helper;
+
 };
 
 /* A scoreboard is an array of values, indexed by vcpu_index */
@@ -145,13 +147,15 @@ struct qemu_plugin_tb {
  */
 struct CPUPluginState {
     DECLARE_BITMAP(event_mask, QEMU_PLUGIN_EV_MAX);
+    bool requires_pc;
+    /* Lazy scratch storage for register reads, accessed by the owning vCPU. */
+    GByteArray *register_read_buffer;
 };
 
 /**
  * qemu_plugin_create_vcpu_state: allocate plugin state
  *
- * The returned data must be released with g_free()
- * when no longer required.
+ * CPU finalization releases register_read_buffer, then frees this state.
  */
 CPUPluginState *qemu_plugin_create_vcpu_state(void);
 
@@ -167,7 +171,9 @@ qemu_plugin_vcpu_syscall(CPUState *cpu, int64_t num, uint64_t a1,
 void qemu_plugin_vcpu_syscall_ret(CPUState *cpu, int64_t num, int64_t ret);
 
 void qemu_plugin_vcpu_mem_cb(CPUState *cpu, uint64_t vaddr,
-                             MemOpIdx oi, enum qemu_plugin_mem_rw rw);
+                             uint64_t value_low, uint64_t value_high,
+                             bool write_succeeded, MemOpIdx oi,
+                             enum qemu_plugin_mem_rw rw);
 
 void qemu_plugin_flush_cb(void);
 
@@ -178,6 +184,26 @@ void qemu_plugin_add_dyn_cb_arr(GArray *arr);
 static inline void qemu_plugin_disable_mem_helpers(CPUState *cpu)
 {
     cpu->neg.plugin_mem_cbs = NULL;
+}
+
+/*
+ * Temporarily hide memory accesses which are internal to the emulated CPU
+ * from plugin memory callbacks.  The caller must restore the returned array
+ * before it leaves the helper normally.
+ */
+static inline GArray *
+qemu_plugin_save_and_disable_mem_helpers(CPUState *cpu)
+{
+    GArray *saved = cpu->neg.plugin_mem_cbs;
+
+    cpu->neg.plugin_mem_cbs = NULL;
+    return saved;
+}
+
+static inline void
+qemu_plugin_restore_mem_helpers(CPUState *cpu, GArray *saved)
+{
+    cpu->neg.plugin_mem_cbs = saved;
 }
 
 /**
@@ -251,7 +277,9 @@ void qemu_plugin_vcpu_syscall_ret(CPUState *cpu, int64_t num, int64_t ret)
 { }
 
 static inline void qemu_plugin_vcpu_mem_cb(CPUState *cpu, uint64_t vaddr,
-                                           MemOpIdx oi,
+                                           uint64_t value_low,
+                                           uint64_t value_high,
+                                           bool write_succeeded, MemOpIdx oi,
                                            enum qemu_plugin_mem_rw rw)
 { }
 
@@ -266,6 +294,16 @@ void qemu_plugin_add_dyn_cb_arr(GArray *arr)
 { }
 
 static inline void qemu_plugin_disable_mem_helpers(CPUState *cpu)
+{ }
+
+static inline GArray *
+qemu_plugin_save_and_disable_mem_helpers(CPUState *cpu)
+{
+    return NULL;
+}
+
+static inline void
+qemu_plugin_restore_mem_helpers(CPUState *cpu, GArray *saved)
 { }
 
 static inline void qemu_plugin_user_exit(void)

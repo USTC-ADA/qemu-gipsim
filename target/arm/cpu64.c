@@ -33,7 +33,6 @@
 #include "hw/qdev-properties.h"
 #include "internals.h"
 #include "cpu-features.h"
-#include "cpregs.h"
 
 void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
 {
@@ -747,10 +746,31 @@ static void aarch64_max_initfn(Object *obj)
     }
 }
 
+/* Opt-in alignment CPU. Existing max/cortex models retain their hardware
+ * configuration. Vector length limits are capabilities, not boot-time ZCR
+ * values: software cannot enlarge this profile beyond the gem5 256-bit VL. */
+static void aarch64_gipsim_initfn(Object *obj)
+{
+    ARMCPU *cpu = ARM_CPU(obj);
+
+    aarch64_max_initfn(obj);
+    if (tcg_enabled()) {
+        set_feature(&cpu->env, ARM_FEATURE_GIPSIM_TRACE);
+        cpu->isar.id_aa64isar1 = FIELD_DP64(
+            cpu->isar.id_aa64isar1, ID_AA64ISAR1, XS, 1);
+        cpu->midr = 0x410fd070;
+        cpu->ctr = 0x8444c004;
+        cpu->sve_max_vq = 2;
+        cpu->sve_vq.supported = 3;
+        cpu->sme_vq.supported = 3;
+    }
+}
+
 static const ARMCPUInfo aarch64_cpus[] = {
     { .name = "cortex-a57",         .initfn = aarch64_a57_initfn },
     { .name = "cortex-a53",         .initfn = aarch64_a53_initfn },
     { .name = "max",                .initfn = aarch64_max_initfn },
+    { .name = "gipsim",             .initfn = aarch64_gipsim_initfn },
 #if defined(CONFIG_KVM) || defined(CONFIG_HVF)
     { .name = "host",               .initfn = aarch64_host_initfn },
 #endif

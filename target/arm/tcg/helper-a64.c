@@ -25,6 +25,7 @@
 #include "qemu/host-utils.h"
 #include "qemu/log.h"
 #include "qemu/main-loop.h"
+#include "qemu/plugin.h"
 #include "qemu/bitops.h"
 #include "internals.h"
 #include "qemu/crc32c.h"
@@ -974,6 +975,24 @@ void HELPER(dc_zva)(CPUARMState *env, uint64_t vaddr_in)
     set_helper_retaddr(ra);
     memset(mem, 0, blocklen);
     clear_helper_retaddr();
+
+    /* The direct RAM memset bypasses the normal store helpers. Report the
+     * bytes actually written, without re-reading memory after the store.
+     * Plugin values support at most 16 bytes; these adjacent ranges describe
+     * the one DC ZVA block, not independent architectural store operations.
+     * The I/O path above already reports its byte stores through the helpers.
+     */
+#ifdef CONFIG_PLUGIN
+    if (env_cpu(env)->neg.plugin_mem_cbs) {
+        int step = MIN(blocklen, 16);
+        MemOp op = ctz32(step);
+        for (int offset = 0; offset < blocklen; offset += step) {
+            qemu_plugin_vcpu_mem_cb(env_cpu(env), vaddr + offset, 0, 0, true,
+                                   make_memop_idx(op, mmu_idx),
+                                   QEMU_PLUGIN_MEM_W);
+        }
+    }
+#endif
 }
 
 void HELPER(unaligned_access)(CPUARMState *env, uint64_t addr,

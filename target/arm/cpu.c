@@ -2001,7 +2001,9 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
          *  - for QEMU CPU types added before we standardized on 1GHz
          *  - for versioned machine types with a version of 9.0 or earlier
          */
-        if (arm_feature(env, ARM_FEATURE_BACKCOMPAT_CNTFRQ) ||
+        if (arm_feature(env, ARM_FEATURE_GIPSIM_TRACE)) {
+            cpu->gt_cntfrq_hz = 25165824;
+        } else if (arm_feature(env, ARM_FEATURE_BACKCOMPAT_CNTFRQ) ||
             cpu->backcompat_cntfrq) {
             cpu->gt_cntfrq_hz = GTIMER_BACKCOMPAT_HZ;
         } else {

@@ -11,10 +11,14 @@
 #ifndef QEMU_QEMU_PLUGIN_H
 #define QEMU_QEMU_PLUGIN_H
 
-#include <glib.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
+
+/* Only the legacy register API needs these opaque GLib types.  Plugins using
+ * that API include glib.h themselves; other plugins need no GLib headers. */
+typedef struct _GArray GArray;
+typedef struct _GByteArray GByteArray;
 
 /*
  * For best performance, build the plugin with -fvisibility=hidden so that
@@ -262,6 +266,29 @@ enum qemu_plugin_mem_rw {
     QEMU_PLUGIN_MEM_RW,
 };
 
+enum qemu_plugin_mem_value_type {
+    QEMU_PLUGIN_MEM_VALUE_U8,
+    QEMU_PLUGIN_MEM_VALUE_U16,
+    QEMU_PLUGIN_MEM_VALUE_U32,
+    QEMU_PLUGIN_MEM_VALUE_U64,
+    QEMU_PLUGIN_MEM_VALUE_U128,
+};
+
+/** Value transferred by the memory transaction owning a memory callback. */
+typedef struct {
+    enum qemu_plugin_mem_value_type type;
+    union {
+        uint8_t u8;
+        uint16_t u16;
+        uint32_t u32;
+        uint64_t u64;
+        struct {
+            uint64_t low;
+            uint64_t high;
+        } u128;
+    } data;
+} qemu_plugin_mem_value;
+
 /**
  * enum qemu_plugin_cond - condition to enable callback
  *
@@ -308,6 +335,16 @@ typedef void (*qemu_plugin_vcpu_tb_trans_cb_t)(qemu_plugin_id_t id,
 QEMU_PLUGIN_API
 void qemu_plugin_register_vcpu_tb_trans_cb(qemu_plugin_id_t id,
                                            qemu_plugin_vcpu_tb_trans_cb_t cb);
+
+/**
+ * Register a translation callback whose metadata supports virtual aliases.
+ * Installation-time only. The plugin must not cache absolute virtual PCs
+ * for later execution; use runtime state and TB-relative instruction offsets.
+ * Other loaded plugins can still require virtual-PC-specific TBs.
+ */
+QEMU_PLUGIN_API
+void qemu_plugin_register_vcpu_tb_trans_cb_pcrel(
+    qemu_plugin_id_t id, qemu_plugin_vcpu_tb_trans_cb_t cb);
 
 /**
  * qemu_plugin_register_vcpu_tb_exec_cb() - register execution callback
@@ -389,9 +426,29 @@ void qemu_plugin_register_vcpu_tb_exec_inline_per_vcpu(
  */
 QEMU_PLUGIN_API
 void qemu_plugin_register_vcpu_insn_exec_cb(struct qemu_plugin_insn *insn,
-                                            qemu_plugin_vcpu_udata_cb_t cb,
-                                            enum qemu_plugin_cb_flags flags,
-                                            void *userdata);
+                                             qemu_plugin_vcpu_udata_cb_t cb,
+                                             enum qemu_plugin_cb_flags flags,
+                                             void *userdata);
+
+/**
+ * qemu_plugin_register_vcpu_insn_retire_cb() - register a successful
+ * instruction completion callback
+ * @insn: the opaque qemu_plugin_insn handle for an instruction
+ * @cb: callback of type qemu_plugin_vcpu_udata_cb_t
+ * @flags: callback flags
+ * @userdata: opaque pointer for the callback
+ *
+ * The callback runs after all translated effects of @insn have completed.
+ * It is not reached when a synchronous exception leaves the instruction.
+ * The callback runs before control is transferred to the next translation
+ * block, with the instruction's completed architectural state visible.
+ */
+QEMU_PLUGIN_API
+void qemu_plugin_register_vcpu_insn_retire_cb(
+    struct qemu_plugin_insn *insn,
+    qemu_plugin_vcpu_udata_cb_t cb,
+    enum qemu_plugin_cb_flags flags,
+    void *userdata);
 
 /**
  * qemu_plugin_register_vcpu_insn_exec_cond_cb() - conditional insn execution cb
@@ -508,6 +565,14 @@ uint64_t qemu_plugin_insn_vaddr(const struct qemu_plugin_insn *insn);
 QEMU_PLUGIN_API
 void *qemu_plugin_insn_haddr(const struct qemu_plugin_insn *insn);
 
+/** Return the guest physical first-byte address captured by code fetch.
+ * Valid during translation only; no debug page walk or guest access occurs.
+ * Returns false for a synthetic instruction without a real fetch.
+ */
+QEMU_PLUGIN_API
+bool qemu_plugin_insn_paddr(const struct qemu_plugin_insn *insn,
+                          uint64_t *paddr);
+
 /**
  * typedef qemu_plugin_meminfo_t - opaque memory transaction handle
  *
@@ -550,6 +615,34 @@ bool qemu_plugin_mem_is_big_endian(qemu_plugin_meminfo_t info);
  */
 QEMU_PLUGIN_API
 bool qemu_plugin_mem_is_store(qemu_plugin_meminfo_t info);
+
+/**
+ * qemu_plugin_mem_get_value() - return the value transferred by this access
+ * @info: opaque memory transaction handle from the current memory callback
+ *
+ * The value is valid only during the callback.  It is the load result for a
+ * read callback and the actual store transaction value for a write callback.
+ */
+QEMU_PLUGIN_API
+qemu_plugin_mem_value qemu_plugin_mem_get_value(qemu_plugin_meminfo_t info);
+
+/** Return whether the current conditional write transaction succeeded. */
+QEMU_PLUGIN_API
+bool qemu_plugin_mem_is_successful(qemu_plugin_meminfo_t info);
+
+/**
+ * qemu_plugin_vcpu_translate_vaddr() - translate a guest virtual address
+ * @vcpu_index: vCPU whose current translation context is used
+ * @vaddr: guest virtual address
+ * @paddr: receives the corresponding guest physical address
+ *
+ * This query is intended for retirement trace metadata such as physical
+ * fetch and branch-target addresses.  It does not perform a guest-visible
+ * access and returns false when no translation exists.
+ */
+QEMU_PLUGIN_API
+bool qemu_plugin_vcpu_translate_vaddr(unsigned int vcpu_index,
+                                      uint64_t vaddr, uint64_t *paddr);
 
 /**
  * qemu_plugin_get_hwaddr() - return handle for memory operation
@@ -762,6 +855,17 @@ QEMU_PLUGIN_API
 void qemu_plugin_register_atexit_cb(qemu_plugin_id_t id,
                                     qemu_plugin_udata_cb_t cb, void *userdata);
 
+/**
+ * qemu_plugin_request_shutdown() - request a clean QEMU shutdown
+ *
+ * This function is safe to call from a vCPU callback.  In system emulation,
+ * it asks the main loop to stop all vCPUs and shut down QEMU.  In user-mode
+ * emulation, it performs the normal plugin cleanup before terminating the
+ * process successfully.
+ */
+QEMU_PLUGIN_API
+void qemu_plugin_request_shutdown(void);
+
 /* returns how many vcpus were started at this point */
 QEMU_PLUGIN_API
 int qemu_plugin_num_vcpus(void);
@@ -868,6 +972,33 @@ GArray *qemu_plugin_get_registers(void);
 QEMU_PLUGIN_API
 int qemu_plugin_read_register(struct qemu_plugin_register *handle,
                               GByteArray *buf);
+
+/**
+ * qemu_plugin_find_register() - find a current-vCPU register by exact name
+ * @name: register name, such as "rip" or "pc"
+ *
+ * Use from the vCPU initialization callback. Returns a borrowed handle, or
+ * NULL if the name does not exist. Cache the handle for subsequent reads;
+ * it is valid for this vCPU's lifetime. No ownership is transferred.
+ */
+QEMU_PLUGIN_API
+struct qemu_plugin_register *qemu_plugin_find_register(const char *name);
+
+/**
+ * qemu_plugin_read_register_bytes() - copy a register into caller storage
+ * @handle: register of the current vCPU
+ * @data: caller-owned writable byte buffer
+ * @capacity: size of @data in bytes
+ *
+ * Requires the same R_REGS callback context as qemu_plugin_read_register().
+ * Returns the register size in target byte order, -ENOSPC if @capacity is
+ * insufficient, or -1 on other failures. Never truncates the value. On failure
+ * @data is unchanged; on success only the returned number of bytes is written.
+ * The caller owns the result, so later register reads do not invalidate it.
+ */
+QEMU_PLUGIN_API
+int qemu_plugin_read_register_bytes(struct qemu_plugin_register *handle,
+                                   uint8_t *data, size_t capacity);
 
 /**
  * qemu_plugin_scoreboard_new() - alloc a new scoreboard

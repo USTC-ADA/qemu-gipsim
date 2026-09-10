@@ -18,6 +18,7 @@
  */
 
 #include "qemu/osdep.h"
+#include "exec/plugin-gen.h"
 #include "translate.h"
 #include "translate-a64.h"
 #include "fpu/softfloat.h"
@@ -4354,6 +4355,10 @@ static void do_mem_zpa(DisasContext *s, int zt, int pg, TCGv_i64 addr,
     t_pg = tcg_temp_new_ptr();
 
     tcg_gen_addi_ptr(t_pg, tcg_env, pred_full_reg_offset(s, pg));
+    /* SVE performs per-lane accesses inside helpers rather than through TCG
+     * qemu_ld/st ops.  Keep this instruction's plugin callback array live
+     * across the helper so the real cpu_ld/st transactions are observable. */
+    plugin_gen_enable_mem_helpers();
     fn(tcg_env, t_pg, addr, tcg_constant_i32(desc));
 }
 

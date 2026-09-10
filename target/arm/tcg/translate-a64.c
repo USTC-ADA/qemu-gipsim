@@ -492,21 +492,20 @@ static inline bool use_goto_tb(DisasContext *s, uint64_t dest)
 static void gen_goto_tb(DisasContext *s, int n, int64_t diff)
 {
     if (use_goto_tb(s, s->pc_curr + diff)) {
-        /*
-         * For pcrel, the pc must always be up-to-date on entry to
-         * the linked TB, so that it can use simple additions for all
-         * further adjustments.  For !pcrel, the linked TB is compiled
-         * to know its full virtual address, so we can delay the
-         * update to pc to the unlinked path.  A long chain of links
-         * can thus avoid many updates to the PC.
-         */
-        if (tb_cflags(s->base.tb) & CF_PCREL) {
-            gen_a64_update_pc(s, diff);
-            tcg_gen_goto_tb(n);
+        /* The retire callback observes the architectural next PC.  A
+         * non-PC-relative TB may deliberately have pc_save == -1 because
+         * upstream normally postpones this write to the unlinked exit path.
+         * The callback is before goto_tb, so materialize the known absolute
+         * target directly in that case instead of using the PC-relative
+         * updater. */
+        if (s->pc_save == -1) {
+            tcg_debug_assert(!(tb_cflags(s->base.tb) & CF_PCREL));
+            tcg_gen_movi_i64(cpu_pc, s->pc_curr + diff);
+            s->pc_save = s->pc_curr + diff;
         } else {
-            tcg_gen_goto_tb(n);
             gen_a64_update_pc(s, diff);
         }
+        tcg_gen_goto_tb_retire(n);
         tcg_gen_exit_tb(s->base.tb, n);
         s->base.is_jmp = DISAS_NORETURN;
     } else {
@@ -514,7 +513,7 @@ static void gen_goto_tb(DisasContext *s, int n, int64_t diff)
         if (s->ss_active) {
             gen_step_complete_exception(s);
         } else {
-            tcg_gen_lookup_and_goto_ptr();
+            tcg_gen_lookup_and_goto_ptr_retire();
             s->base.is_jmp = DISAS_NORETURN;
         }
     }
@@ -1943,6 +1942,18 @@ static bool trans_DSB_DMB(DisasContext *s, arg_DSB_DMB *a)
     return true;
 }
 
+static bool trans_DSB_nXS(DisasContext *s, arg_DSB_nXS *a)
+{
+    if (!dc_isar_feature(aa64_xs, s)) {
+        return false;
+    }
+    /* FEAT_XS changes the completion scope, which TCG does not otherwise
+     * model.  Preserve the same conservative ordering used for an all-access
+     * DSB; the new gipsim profile advertises this decode explicitly. */
+    tcg_gen_mb(TCG_BAR_SC | TCG_MO_ALL);
+    return true;
+}
+
 static bool trans_ISB(DisasContext *s, arg_ISB *a)
 {
     /*
@@ -2280,6 +2291,14 @@ static void handle_sys(DisasContext *s, bool isread,
     }
 
     if (!ri) {
+        /* The dedicated gipsim hardware profile matches gem5's
+         * impdef_nop setting: unknown implementation-defined CRn=11/15
+         * system accesses retire as no-ops.  Existing QEMU CPU types retain
+         * their original UNDEF behavior. */
+        if (arm_dc_feature(s, ARM_FEATURE_GIPSIM_TRACE) &&
+            (crn == 11 || crn == 15)) {
+            return;
+        }
         /* Unknown register; this might be a guest error or a QEMU
          * unimplemented feature.
          */
@@ -12150,6 +12169,15 @@ static void aarch64_tr_translate_insn(DisasContextBase *dcbase, CPUState *cpu)
         }
     }
 
+    /* gem5-compatible m5_work_begin/m5_work_end pseudo-instructions. */
+    if (insn == 0xff5a0110 || insn == 0xff5b0110) {
+        if (arm_dc_feature(s, ARM_FEATURE_GIPSIM_TRACE)) {
+            /* gem5's void pseudo-call returns zero in X0. */
+            tcg_gen_movi_i64(cpu_reg(s, 0), 0);
+        }
+        return;
+    }
+
     s->is_nonstreaming = false;
     if (s->sme_trap_nonstreaming) {
         disas_sme_fa64(s, insn);
@@ -12202,13 +12230,13 @@ static void aarch64_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
             gen_a64_update_pc(dc, 4);
             /* fall through */
         case DISAS_EXIT:
-            tcg_gen_exit_tb(NULL, 0);
+            tcg_gen_exit_tb_retire(NULL, 0);
             break;
         case DISAS_UPDATE_NOCHAIN:
             gen_a64_update_pc(dc, 4);
             /* fall through */
         case DISAS_JUMP:
-            tcg_gen_lookup_and_goto_ptr();
+            tcg_gen_lookup_and_goto_ptr_retire();
             break;
         case DISAS_NORETURN:
         case DISAS_SWI:
@@ -12232,7 +12260,7 @@ static void aarch64_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
              * The helper doesn't necessarily throw an exception, but we
              * must go back to the main loop to check for interrupts anyway.
              */
-            tcg_gen_exit_tb(NULL, 0);
+            tcg_gen_exit_tb_retire(NULL, 0);
             break;
         }
     }

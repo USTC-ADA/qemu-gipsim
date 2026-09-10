@@ -64,6 +64,8 @@ struct qemu_plugin_ctx {
     bool installing;
     bool uninstalling;
     bool resetting;
+    /* Opt-in: translated metadata is independent of the absolute guest PC. */
+    bool pc_relative;
 };
 
 struct qemu_plugin_ctx *plugin_id_to_ctx_locked(qemu_plugin_id_t id);
@@ -80,6 +82,9 @@ void plugin_reset_uninstall(qemu_plugin_id_t id,
 
 void plugin_register_cb(qemu_plugin_id_t id, enum qemu_plugin_event ev,
                         void *func);
+
+void plugin_register_cb_pcrel(qemu_plugin_id_t id,
+                            qemu_plugin_vcpu_tb_trans_cb_t cb);
 
 void plugin_unregister_cb__locked(struct qemu_plugin_ctx *ctx,
                                   enum qemu_plugin_event ev);

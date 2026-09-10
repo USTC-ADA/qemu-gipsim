@@ -350,6 +350,9 @@ typedef union IcountDecr {
  *                         from CPUArchState, via small negative offsets.
  * @can_do_io: True if memory-mapped IO is allowed.
  * @plugin_mem_cbs: active plugin memory callbacks
+ * @plugin_mem_value_low: low 64 bits of the current memory transaction value
+ * @plugin_mem_value_high: high 64 bits of the current memory transaction value
+ * @plugin_mem_write_succeeded: whether the current conditional write succeeded
  */
 typedef struct CPUNegativeOffsetState {
     CPUTLB tlb;
@@ -358,6 +361,9 @@ typedef struct CPUNegativeOffsetState {
      * The callback pointer are accessed via TCG (see gen_empty_mem_helper).
      */
     GArray *plugin_mem_cbs;
+    uint64_t plugin_mem_value_low;
+    uint64_t plugin_mem_value_high;
+    bool plugin_mem_write_succeeded;
 #endif
     IcountDecr icount_decr;
     bool can_do_io;

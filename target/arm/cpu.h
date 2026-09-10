@@ -2435,6 +2435,8 @@ enum arm_features {
      * CPU types added in future.
      */
     ARM_FEATURE_BACKCOMPAT_CNTFRQ, /* 62.5MHz timer default */
+    /* Opt-in trace-alignment hardware profile; never set by existing CPUs. */
+    ARM_FEATURE_GIPSIM_TRACE,
 };
 
 static inline int arm_feature(CPUARMState *env, int feature)
